@@ -1,6 +1,24 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api';
+const getApiBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    const envUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    if (envUrl && envUrl.startsWith('http')) {
+      const isTargetingLoopback = envUrl.includes('localhost') || envUrl.includes('127.0.0.1');
+      const isHostRemoteOrLAN = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+      if (isTargetingLoopback && isHostRemoteOrLAN) {
+        return '/api';
+      }
+      return envUrl;
+    }
+    return envUrl || '/api';
+  }
+  return process.env.INTERNAL_BACKEND_URL
+    ? `${process.env.INTERNAL_BACKEND_URL}/api`
+    : 'http://127.0.0.1:8080/api';
+};
+
+export const API_BASE_URL = getApiBaseUrl();
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -8,6 +26,7 @@ export const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
 
 // Request interceptor: Inject JWT token if available in localStorage
 api.interceptors.request.use(
@@ -28,7 +47,6 @@ api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401 && typeof window !== 'undefined') {
-      // If unauthorized, could clear token if not on login page
       const currentPath = window.location.pathname;
       if (currentPath !== '/login' && currentPath !== '/register' && currentPath !== '/') {
         localStorage.removeItem('nutrisun_token');
@@ -39,51 +57,55 @@ api.interceptors.response.use(
   }
 );
 
+/**
+ * Fetches a receipt file from the protected /uploads/receipts/:filename endpoint using
+ * an Authorization: Bearer header and returns a temporary blob URL for in-page display.
+ *
+ * IMPORTANT: The caller is responsible for calling URL.revokeObjectURL(blobUrl) when
+ * the URL is no longer needed to avoid memory leaks.
+ *
+ * @param receiptPath - The server-side path e.g. "/uploads/receipts/filename.jpg"
+ * @returns A promise that resolves to a temporary blob: URL string, or null on failure.
+ */
+export async function fetchReceiptBlobUrl(receiptPath: string): Promise<string | null> {
+  if (!receiptPath || typeof window === 'undefined') return null;
+  const token = localStorage.getItem('nutrisun_token');
+  if (!token) return null;
+
+  try {
+    const response = await fetch(receiptPath, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return URL.createObjectURL(blob);
+  } catch {
+    return null;
+  }
+}
+
 // TypeScript Models matching Golang backend contracts
 export type Role = 'customer' | 'admin' | 'chef' | 'delivery';
 export type MealSlot = 'breakfast' | 'lunch' | 'dinner';
 export type DietaryType = 'veg' | 'non_veg' | 'egg';
-export type MealStatus = 'TAKE' | 'SKIP';
+export type MealStatus = 'TAKE' | 'SKIPPED_ON_TIME' | 'SKIPPED_LATE' | 'PAUSED' | 'REALLOCATED';
 export type DeliveryStatus = 'PENDING' | 'DELIVERED';
 export type PaymentStatus = 'PENDING' | 'PAID';
+export type SubscriptionStatus = 'PAYMENT_PENDING' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
+export type RequestType = 'SKIP' | 'PAUSE' | 'RESUME';
+export type RequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export interface User {
   id: number;
   name: string;
-  email: string;
-  phone?: string;
+  phone: string;
+  delivery_address: string;
+  email?: string;
   role: Role;
-  created_at?: string;
-}
-
-export interface Address {
-  id: number;
-  user_id: number;
-  address_type: string;
-  address_line: string;
-  area: string;
-  landmark?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface CustomerPreference {
-  id: number;
-  user_id: number;
-  breakfast_address_id?: number | null;
-  lunch_address_id?: number | null;
-  dinner_address_id?: number | null;
-  breakfast_address?: Address | null;
-  lunch_address?: Address | null;
-  dinner_address?: Address | null;
-}
-
-export interface MenuItem {
-  id: number;
-  date: string; // YYYY-MM-DD
-  meal_slot: MealSlot;
-  item_name: string;
-  dietary_type: DietaryType;
+  must_change_password?: boolean;
+  instructions_accepted?: boolean;
+  instructions_accepted_at?: string;
+  instructions_version?: string;
   created_at?: string;
 }
 
@@ -92,6 +114,11 @@ export interface SubscriptionPlan {
   name: string;
   days_count: number;
   price: number;
+  shifts: string;
+  meal_credits: number;
+  is_archived: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface UserSubscription {
@@ -101,9 +128,40 @@ export interface UserSubscription {
   start_date: string;
   end_date: string;
   payment_status: PaymentStatus;
+  status: SubscriptionStatus;
   is_active: boolean;
+  plan_snapshot_name: string;
+  plan_snapshot_price: number;
+  plan_snapshot_days: number;
+  plan_snapshot_shifts: string;
+  plan_snapshot_total_credits: number;
+  selected_shifts?: string;
+  total_credits: number;
+  used_credits: number;
+  remaining_credits: number;
+  pending_credits: number;
+  forfeited_credits: number;
+  payment_confirmed_at?: string;
+  payment_record?: PaymentRecord;
   user?: User;
   plan?: SubscriptionPlan;
+}
+
+export interface PaymentRecord {
+  id: number;
+  subscription_id: number;
+  user_id: number;
+  amount: number;
+  payment_method: string;
+  status: 'PENDING' | 'CONFIRMED' | 'REJECTED';
+  transaction_ref?: string;
+  proof_image_url?: string;
+  uploaded_at?: string;
+  confirmed_by_admin_id?: number;
+  confirmed_at?: string;
+  admin_notes?: string;
+  notes?: string;
+  created_at?: string;
 }
 
 export interface DailyMealLog {
@@ -115,118 +173,455 @@ export interface DailyMealLog {
   dietary_type: DietaryType;
   status: MealStatus;
   delivery_status: DeliveryStatus;
+  credit_deducted: boolean;
+  delivered_at?: string;
+  reallocated_to_log_id?: number;
+  reallocated_from_log_id?: number;
   subscription?: UserSubscription;
 }
 
-export interface SlotCountBreakdown {
-  total: number;
-  veg: number;
-  non_veg: number;
-  egg: number;
-  skipped: number;
+export interface MenuItem {
+  id: number;
+  date: string; // YYYY-MM-DD
+  meal_slot: MealSlot;
+  item_name: string;
+  dietary_type: DietaryType;
+  created_at?: string;
 }
 
-export interface KitchenCountResponse {
+export interface ServiceRequest {
+  id: number;
+  user_id: number;
+  subscription_id: number;
+  request_type: RequestType;
+  status: RequestStatus;
+  daily_meal_log_id?: number;
+  effective_date: string;
+  meal_slot?: MealSlot;
+  pause_start_date?: string;
+  pause_resume_date?: string;
+  actual_resume_date?: string;
+  submission_time: string;
+  is_on_time: boolean;
+  credit_result?: string;
+  pending_credits_added?: number;
+  forfeited_credits_count?: number;
+  decision_time?: string;
+  decided_by_admin_id?: number;
+  admin_notes?: string;
+  created_at?: string;
+  subscription?: UserSubscription;
+  daily_meal_log?: DailyMealLog;
+  user?: User;
+}
+
+export interface CreditTransaction {
+  id: number;
+  subscription_id: number;
+  user_id: number;
+  delta: number;
+  balance_after: number;
+  reason: string;
+  notes?: string;
+  created_at: string;
+}
+
+export interface PendingCountsResponse {
+  payment_pending: number;
+  skip_requests: number;
+  pause_requests: number;
+  resume_requests: number;
+  total_pending: number;
+}
+
+export interface ShiftKitchenResponse {
   date: string;
-  slots: Record<string, SlotCountBreakdown>;
-  grand_total: number;
+  shift: MealSlot;
+  total_portions: number;
+  late_cancellations: number;
   menu_items: MenuItem[];
 }
 
-export interface DeliveryEntry {
+export interface DeliveryItem {
   meal_log_id: number;
-  user_id: number;
+  subscription_id: number;
   customer_name: string;
   customer_phone: string;
-  customer_email: string;
+  delivery_address: string;
   meal_slot: MealSlot;
-  dietary_type: DietaryType;
-  meal_status: MealStatus;
+  quantity: number;
   delivery_status: DeliveryStatus;
-  address_id?: number | null;
-  address_type?: string;
-  address_line?: string;
-  area?: string;
-  landmark?: string;
+  delivered_at?: string;
 }
 
 export interface DeliverySheetResponse {
   date: string;
-  slot: MealSlot;
+  shift: MealSlot;
   total_meals: number;
-  deliveries: DeliveryEntry[];
-  grouped_by_area: Record<string, DeliveryEntry[]>;
+  deliveries: DeliveryItem[];
 }
 
-export interface SubscriptionItemResponse {
+/**
+ * Securely downloads a file from an authenticated API endpoint as a Blob.
+ * Validates that response is binary data and not a JSON error.
+ * Extracts the filename from Content-Disposition/File-Name or uses fallback.
+ * Triggers browser download without exposing tokens in URLs.
+ */
+export async function downloadAuthenticatedFile(
+  endpointUrl: string,
+  params?: Record<string, any>,
+  fallbackFilename: string = 'NutriSun_Export.xlsx'
+): Promise<{ success: boolean; filename: string; error?: string }> {
+  try {
+    const response = await api.get(endpointUrl, {
+      params,
+      responseType: 'blob',
+    });
+
+    // Check if response is actually a JSON error returned as a blob
+    const rawContentType = response.headers['content-type'];
+    const contentType = typeof rawContentType === 'string' ? rawContentType : '';
+    if (contentType.includes('application/json')) {
+      const text = await (response.data as Blob).text();
+      let errorMsg = 'Failed to generate file';
+      try {
+        const json = JSON.parse(text);
+        errorMsg = json.error || json.message || errorMsg;
+      } catch {}
+      throw new Error(errorMsg);
+    }
+
+    // Determine filename
+    let filename = fallbackFilename;
+    const rawContentDisposition = response.headers['content-disposition'];
+    const contentDisposition = typeof rawContentDisposition === 'string' ? rawContentDisposition : '';
+    const rawCustomFileName = response.headers['file-name'];
+    const customFileName = typeof rawCustomFileName === 'string' ? rawCustomFileName : '';
+
+    if (customFileName) {
+      filename = customFileName;
+    } else if (contentDisposition) {
+      const match = contentDisposition.match(/filename="?([^";]+)"?/i);
+      if (match && match[1]) {
+        filename = match[1].trim();
+      }
+    }
+
+    // Create object URL and trigger download
+    const blob = new Blob([response.data], {
+      type: contentType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+
+    return { success: true, filename };
+  } catch (err: any) {
+    let message = err.message || 'Download failed';
+    if (err.response) {
+      if (err.response.status === 401) {
+        message = 'Session expired or authorization required. Please log in again.';
+      } else if (err.response.status === 403) {
+        message = 'Admin access required to download this report.';
+      } else if (err.response.data instanceof Blob) {
+        try {
+          const text = await (err.response.data as Blob).text();
+          const json = JSON.parse(text);
+          message = json.error || json.message || message;
+        } catch {}
+      }
+    }
+    return { success: false, filename: fallbackFilename, error: message };
+  }
+}
+
+export interface CustomerSalesItem {
+  customer_id: number;
+  customer_name: string;
+  customer_phone: string;
+  customer_address: string;
+  confirmed_sales: number;
+  pending_amount: number;
+  payments_count: number;
+  active_plans: string;
+  current_status: string;
+}
+
+export interface PaymentRecordDetail {
   id: number;
+  subscription_id: number;
   user_id: number;
   customer_name: string;
-  customer_email: string;
   customer_phone: string;
-  plan_id: number;
+  plan_name: string;
+  amount: number;
+  payment_method: string;
+  status: string;
+  transaction_ref: string;
+  created_at: string;
+  confirmed_at: string;
+  confirmed_by: string;
+  admin_notes: string;
+}
+
+export interface DailySalesDetail {
+  date: string;
+  confirmed_amount: number;
+  pending_amount: number;
+  payments_count: number;
+  payments: PaymentRecordDetail[];
+}
+
+export interface AnalyticsResponse {
+  selected_month?: string;
+  start_date?: string;
+  end_date?: string;
+  total_confirmed_sales: number;
+  total_pending_amount?: number;
+  confirmed_payment_count?: number;
+  pending_payment_count?: number;
+  total_delivered_meals: number;
+  breakfast_delivered: number;
+  lunch_delivered: number;
+  dinner_delivered: number;
+  customer_sales?: CustomerSalesItem[];
+  daily_sales?: DailySalesDetail[];
+  recent_payments?: PaymentRecordDetail[];
+}
+
+export interface CustomerSubscriptionDetail {
+  id: number;
   plan_name: string;
   plan_price: number;
-  days_count: number;
+  selected_shifts: string;
   start_date: string;
   end_date: string;
-  payment_status: PaymentStatus;
-  payment_badge: string;
-  is_active: boolean;
+  status: string;
+  payment_status: string;
+  total_credits: number;
+  used_credits: number;
+  remaining_credits: number;
+  pending_credits: number;
+  forfeited_credits: number;
+  payment_confirmed_at: string;
   created_at: string;
+}
+
+export interface CustomerCreditSummary {
+  available: number;
+  used: number;
+  pending: number;
+  forfeited: number;
+  total: number;
+}
+
+export interface CustomerActivityItem {
+  id?: number;
+  timestamp: string;
+  event_type: string;
+  action: string;
+  status: string;
+  affected_date: string;
+  meal_shift: string;
+  credit_change: string;
+  actor: string;
+  reason: string;
+  subscription_id?: number;
+}
+
+export interface CustomerReportItem {
+  id: number;
+  name: string;
+  phone: string;
+  email: string;
+  delivery_address: string;
+  registered_date: string;
+  current_status: string;
+  active_plans: string;
+  credit_balance: CustomerCreditSummary;
+  subscriptions: CustomerSubscriptionDetail[];
+  payment_history: PaymentRecordDetail[];
+  activity_history: CustomerActivityItem[];
+}
+
+export interface ExtractedPreviewItem {
+  date: string;
+  meal_slot: MealSlot;
+  item_name: string;
+  dietary_type: DietaryType;
+}
+
+export interface UploadMenuResponse {
+  message: string;
+  days_imported: number;
+  items_created: number;
+  replaced_existing: boolean;
+  uncertain_entries?: string[];
+}
+
+export interface UploadConflictResponse {
+  requires_confirmation: boolean;
+  existing_count: number;
+  new_days_count: number;
+  new_items_count: number;
+  message: string;
+  extracted_preview?: ExtractedPreviewItem[];
+  uncertain_entries?: string[];
 }
 
 // Typed API Helpers
 export const authApi = {
-  register: (data: { name: string; email: string; password: string; phone?: string; role?: Role }) =>
+  register: (data: { name: string; phone: string; delivery_address: string; password: string; email?: string }) =>
     api.post<{ message: string; token: string; user: User }>('/auth/register', data),
-  login: (data: { email: string; password: string }) =>
+  login: (data: { phone: string; password: string }) =>
     api.post<{ message: string; token: string; user: User }>('/auth/login', data),
+  changePassword: (data: { new_password: string }) =>
+    api.post<{ message: string }>('/auth/change-password', data),
+  getMe: () =>
+    api.get<{ user: User }>('/auth/me'),
 };
 
 export const customerApi = {
-  getAddresses: () =>
-    api.get<{ addresses: Address[]; preferences: { breakfast_address_id?: number; lunch_address_id?: number; dinner_address_id?: number } }>('/customer/addresses'),
-  addAddress: (data: { address_type: string; address_line: string; area: string; landmark?: string }) =>
-    api.post<{ message: string; address: Address }>('/customer/addresses', data),
-  updateSlotAddresses: (data: { breakfast_address_id?: number | null; lunch_address_id?: number | null; dinner_address_id?: number | null }) =>
-    api.put<{ message: string; preferences: CustomerPreference }>('/customer/slot-addresses', data),
+  getPlans: () =>
+    api.get<{ plans: SubscriptionPlan[] }>('/plans'),
+  buyPlan: (plan_id: number, selected_shifts?: string) =>
+    api.post<{
+      message: string;
+      subscription_id: number;
+      plan_name: string;
+      selected_shifts?: string;
+      amount: number;
+      upi_id: string;
+      payee_name: string;
+      account_holder: string;
+      qr_asset_path: string;
+      instruction: string;
+      upi_url: string;
+      status: string;
+    }>('/customer/buy-plan', { plan_id, selected_shifts }),
+  submitPaymentProof: (subscriptionId: number, formData: FormData) =>
+    api.post<{
+      message: string;
+      subscription_id: number;
+      status: string;
+      payment_status: string;
+      proof_image_url?: string;
+      transaction_ref?: string;
+    }>(`/customer/subscriptions/${subscriptionId}/payment-proof`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  getSubscriptions: () =>
+    api.get<{ count: number; subscriptions: UserSubscription[] }>('/customer/subscriptions'),
   getMyMeals: (params?: { date?: string; month?: string; year?: string }) =>
     api.get<{ count: number; meals: DailyMealLog[] }>('/customer/my-meals', { params }),
-  toggleMealStatus: (id: number) =>
-    api.put<{ message: string; meal: DailyMealLog }>(`/customer/meals/${id}/toggle`),
+  requestSkip: (meal_log_id: number) =>
+    api.post<{ message: string; request_id: number; is_on_time: boolean; status: string }>('/customer/requests/skip', { meal_log_id }),
+  requestPause: (data: { subscription_id: number; pause_start_date: string; estimated_resume_date?: string }) =>
+    api.post<{ message: string; request_id: number; is_on_time: boolean; status: string }>('/customer/requests/pause', data),
+  requestResume: (data: { subscription_id: number; actual_resume_date: string }) =>
+    api.post<{ message: string; request_id: number; is_on_time: boolean; status: string }>('/customer/requests/resume', data),
+  getRequests: () =>
+    api.get<{ count: number; requests: ServiceRequest[] }>('/customer/requests'),
+  getCredits: (params?: { subscription_id?: number }) =>
+    api.get<{ count: number; transactions: CreditTransaction[] }>('/customer/credits', { params }),
+  acceptInstructions: (data?: { version?: string }) =>
+    api.post<{ message: string; instructions_accepted: boolean; instructions_version: string }>('/customer/accept-instructions', data || {}),
 };
 
 export const menuApi = {
   getMenu: (params?: { month?: string; year?: string }) =>
     api.get<{ month: string; year: string; count: number; menu: MenuItem[] }>('/menu', { params }),
+  uploadMonthlyMenu: (formData: FormData, onProgress?: (percent: number) => void) =>
+    api.post<UploadMenuResponse>('/admin/menu/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total && onProgress) {
+          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(percent);
+        }
+      },
+    }),
+  getMenuTemplateUrl: (month: string, year: string) =>
+    `${API_BASE_URL}/admin/menu/template?month=${month}&year=${year}`,
+  downloadMenuTemplate: (month: string, year: string) =>
+    downloadAuthenticatedFile('/admin/menu/template', { month, year }, `NutriSun_Menu_Template_${year}_${month}.xlsx`),
 };
 
 export const kitchenApi = {
-  getTodayCount: (date?: string) =>
-    api.get<KitchenCountResponse>('/kitchen/today-count', { params: date ? { date } : {} }),
+  getTodayCount: (params?: { date?: string; shift?: MealSlot }) =>
+    api.get<ShiftKitchenResponse>('/kitchen/today-count', { params }),
 };
 
 export const deliveryApi = {
-  getSheet: (params: { date?: string; slot?: MealSlot }) =>
+  getSheet: (params: { date?: string; shift?: MealSlot }) =>
     api.get<DeliverySheetResponse>('/delivery/sheet', { params }),
-  updateStatus: (id: number, data?: { delivery_status: DeliveryStatus }) =>
-    api.put<{ message: string; meal_log_id: number; delivery_status: DeliveryStatus }>(`/delivery/${id}/status`, data || {}),
+  updateStatus: (id: number) =>
+    api.put<{ message: string; meal_log_id: number; delivery_status: DeliveryStatus; delivered_at?: string; remaining_credits: number }>(`/delivery/${id}/status`),
 };
 
 export const adminApi = {
+  getPendingCounts: () =>
+    api.get<PendingCountsResponse>('/admin/pending-counts'),
+  getSubscriptions: (params?: { status?: string; payment_status?: string }) =>
+    api.get<{ count: number; subscriptions: UserSubscription[] }>('/admin/subscriptions', { params }),
+  confirmPayment: (id: number, data: { start_date: string }) =>
+    api.put<{ message: string; subscription: UserSubscription; scheduled_days: number; total_meals: number }>(`/admin/subscriptions/${id}/payment`, data),
+  rejectPayment: (id: number, data?: { reason?: string }) =>
+    api.put<{ message: string; subscription: UserSubscription }>(`/admin/subscriptions/${id}/payment/reject`, data || {}),
+  getRequests: (params?: {
+    type?: string;
+    status?: string;
+    date?: string;
+    meal?: string;
+    customer?: string;
+    timing?: string;
+    credit_result?: string;
+    scope?: string;
+  }) =>
+    api.get<{ count: number; requests: ServiceRequest[] }>('/admin/requests', { params }),
+  decideRequest: (id: number, data: { action: 'APPROVE' | 'REJECT'; admin_notes?: string }) =>
+    api.put<{ message: string; request: ServiceRequest }>(`/admin/requests/${id}/decide`, data),
+  reallocate: (data: { original_meal_log_id: number; new_date: string; new_slot: MealSlot; reason?: string }) =>
+    api.post<{ message: string; original_meal_id: number; new_meal_id: number; new_date: string; new_slot: MealSlot }>('/admin/reallocate', data),
+  adjustCredits: (data: { subscription_id: number; delta: number; reason: string }) =>
+    api.post<{ message: string; remaining_credits: number }>('/admin/adjust-credits', data),
+  getCustomers: () =>
+    api.get<{ count: number; customers: User[] }>('/admin/customers'),
+  updateCustomerAddress: (id: number, data: { delivery_address: string }) =>
+    api.put<{ message: string; user: User }>(`/admin/customers/${id}/address`, data),
+  resetCustomerPassword: (id: number, data: { temporary_password: string }) =>
+    api.post<{ message: string }>(`/admin/customers/${id}/reset-password`, data),
+  getStaff: () =>
+    api.get<{ staff: User[] }>('/admin/staff'),
+  createStaff: (data: { name: string; phone: string; password: string; role: Role }) =>
+    api.post<{ message: string; staff: User }>('/admin/staff', data),
+  getPlans: () =>
+    api.get<{ plans: SubscriptionPlan[] }>('/admin/plans'),
+  createPlan: (data: { name: string; days_count: number; price: number; shifts: string; meal_credits: number }) =>
+    api.post<{ message: string; plan: SubscriptionPlan }>('/admin/plans', data),
+  updatePlan: (id: number, data: { name: string; days_count: number; price: number; shifts: string; meal_credits: number }) =>
+    api.put<{ message: string; plan: SubscriptionPlan }>(`/admin/plans/${id}`, data),
+  archivePlan: (id: number) =>
+    api.put<{ message: string; is_archived: boolean }>(`/admin/plans/${id}/archive`),
   createMenuItem: (data: { date: string; meal_slot: MealSlot; item_name: string; dietary_type: DietaryType }) =>
     api.post<{ message: string; item: MenuItem }>('/admin/menu', data),
   deleteMenuItem: (id: number) =>
     api.delete<{ message: string; id: number }>(`/admin/menu/${id}`),
-  getSubscriptions: () =>
-    api.get<{ count: number; subscriptions: SubscriptionItemResponse[] }>('/admin/subscriptions'),
-  markPaymentPaid: (id: number) =>
-    api.put<{ message: string; subscription: UserSubscription; payment_status: PaymentStatus }>(`/admin/subscriptions/${id}/payment`),
-  createSubscription: (data: { user_id: number; plan_id: number; start_date: string; payment_status?: string }) =>
-    api.post<{ message: string; subscription: UserSubscription }>('/admin/subscriptions', data),
-  getPlans: () =>
-    api.get<{ plans: SubscriptionPlan[] }>('/admin/plans'),
-  createPlan: (data: { name: string; days_count: number; price: number }) =>
-    api.post<{ message: string; plan: SubscriptionPlan }>('/admin/plans', data),
+  getAnalytics: (params?: { month?: string; start_date?: string; end_date?: string }) =>
+    api.get<AnalyticsResponse>('/admin/analytics', { params }),
+  getCustomerReports: (params?: { month?: string; start_date?: string; end_date?: string; search?: string; customer_id?: number }) =>
+    api.get<{ count: number; customers: CustomerReportItem[] }>('/admin/analytics/customers', { params }),
+  downloadExportExcel: (params?: { month?: string; report?: string; start_date?: string; end_date?: string }) => {
+    const isMonthly = params?.report === 'monthly' || Boolean(params?.month);
+    const fallback = isMonthly
+      ? `NutriSun_Monthly_Report_${params?.month || 'Current'}.xlsx`
+      : 'NutriSun_Business_Data.xlsx';
+    return downloadAuthenticatedFile('/admin/export-excel', params, fallback);
+  },
+  getExportExcelUrl: () => `${API_BASE_URL}/admin/export-excel`,
 };

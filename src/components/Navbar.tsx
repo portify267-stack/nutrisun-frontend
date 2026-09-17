@@ -1,16 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import {
-  Sun,
-  UtensilsCrossed,
   Truck,
   ShieldCheck,
   CalendarDays,
-  MapPin,
+  Calendar,
   LogOut,
   LogIn,
   UserPlus,
@@ -18,6 +17,7 @@ import {
   X,
   ChefHat,
   Sparkles,
+  ChevronRight,
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -25,20 +25,25 @@ export default function Navbar() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Close mobile drawer on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
   // Dynamic navigation links based on user role
   const getNavLinks = () => {
     if (!user) {
       return [
-        { label: 'Today\'s Menu', href: '/#menu', icon: UtensilsCrossed },
-        { label: 'Plans & Pricing', href: '/#plans', icon: Sparkles },
+        { label: 'Sign In', href: '/login', icon: LogIn },
+        { label: 'Register', href: '/register', icon: UserPlus },
       ];
     }
 
     switch (user.role) {
       case 'chef':
         return [
-          { label: 'Kitchen Counter', href: '/dashboard/chef', icon: ChefHat },
-          { label: 'Daily Menu', href: '/#menu', icon: UtensilsCrossed },
+          { label: 'Kitchen Command HUD', href: '/dashboard/chef', icon: ChefHat },
+          { label: 'Monthly Menu', href: '/dashboard/menu', icon: Calendar },
         ];
       case 'delivery':
         return [
@@ -47,60 +52,86 @@ export default function Navbar() {
       case 'admin':
         return [
           { label: 'Admin Center', href: '/dashboard/admin', icon: ShieldCheck },
+          { label: 'Monthly Menu', href: '/dashboard/menu', icon: Calendar },
           { label: 'Kitchen View', href: '/dashboard/chef', icon: ChefHat },
-          { label: 'Delivery View', href: '/dashboard/delivery', icon: Truck },
+          { label: 'Logistics View', href: '/dashboard/delivery', icon: Truck },
         ];
       case 'customer':
       default:
         return [
-          { label: 'My Meals', href: '/dashboard/customer', icon: CalendarDays },
-          { label: 'Today\'s Menu', href: '/#menu', icon: UtensilsCrossed },
+          { label: 'My Subscriptions & Meals', href: '/dashboard/customer', icon: CalendarDays },
+          { label: 'Monthly Menu', href: '/dashboard/menu', icon: Calendar },
         ];
     }
   };
 
   const navLinks = getNavLinks();
 
-  const getRoleBadgeClass = (role?: string) => {
+  const getRoleTheme = (role?: string) => {
     switch (role) {
       case 'admin':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
+        return {
+          badge: 'bg-[#741B22]/15 text-[#741B22] border-[#741B22]/30',
+          ring: 'ring-[#741B22]',
+          dot: 'bg-[#741B22]',
+        };
       case 'chef':
-        return 'bg-amber-100 text-amber-800 border-amber-200';
+        return {
+          badge: 'bg-[#F7DE9D] text-[#22222B] border-[#F7DE9D]',
+          ring: 'ring-[#F7DE9D]',
+          dot: 'bg-[#B92F25]',
+        };
       case 'delivery':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return {
+          badge: 'bg-[#B92F25]/15 text-[#B92F25] border-[#B92F25]/30',
+          ring: 'ring-[#B92F25]',
+          dot: 'bg-[#B92F25]',
+        };
       case 'customer':
       default:
-        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+        return {
+          badge: 'bg-[#B0BE8C]/30 text-[#3F4D25] border-[#B0BE8C]',
+          ring: 'ring-[#B0BE8C]',
+          dot: 'bg-[#B0BE8C]',
+        };
     }
   };
 
+  const roleTheme = getRoleTheme(user?.role);
+
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-emerald-100 shadow-sm transition-all">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+    <>
+      <header className="sticky top-2 sm:top-3 z-50 px-2.5 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full transition-all">
+        <div className="glass-panel rounded-2xl sm:rounded-full border border-[#B0BE8C]/35 shadow-lg shadow-black/5 px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between transition-all">
           {/* Logo & Brand */}
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-emerald-500 to-amber-400 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-              <Sun className="w-6 h-6 animate-spin-slow" />
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 group min-w-0">
+            <div className="relative shrink-0">
+              <Image
+                src="/logo.png"
+                alt="NUTRISUN - Healthy Tasty Daily"
+                width={48}
+                height={48}
+                priority
+                className="w-9 h-9 sm:w-11 sm:h-11 object-contain group-hover:scale-105 transition-transform duration-300"
+              />
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-black text-xl tracking-tight bg-gradient-to-r from-emerald-800 to-emerald-600 bg-clip-text text-transparent">
-                  NutriSun
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="font-black text-base sm:text-xl md:text-2xl tracking-wider text-[#22222B] uppercase truncate">
+                  NUTRISUN
                 </span>
-                <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 rounded">
-                  Healthy
+                <span className="hidden min-[380px]:inline-block px-1.5 sm:px-2 py-0.5 text-[8px] sm:text-[9px] font-black uppercase tracking-widest bg-[#F7DE9D] text-[#22222B] rounded-full border border-[#F7DE9D]/80 shadow-2xs shrink-0">
+                  Fresh
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 font-medium hidden sm:block">
-                Tailored Daily Meal Subscriptions
+              <p className="text-[10px] sm:text-[11px] text-[#741B22] font-bold tracking-wider -mt-0.5 italic hidden sm:block">
+                Healthy Tasty Daily
               </p>
             </div>
           </Link>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-1.5 lg:gap-2">
+          <nav className="hidden md:flex items-center gap-1 lg:gap-2">
             {navLinks.map((link) => {
               const Icon = link.icon;
               const isActive = pathname === link.href;
@@ -108,149 +139,185 @@ export default function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  className={`relative px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 flex items-center gap-1.5 min-h-[44px] ${
                     isActive
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-xs'
-                      : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50'
+                      ? 'text-[#22222B] font-extrabold bg-[#B0BE8C] border border-[#B0BE8C] shadow-xs'
+                      : 'text-[#22222B]/75 hover:text-[#B92F25] hover:bg-[#B0BE8C]/20'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-emerald-600' : 'text-slate-400'}`} />
-                  {link.label}
+                  <Icon
+                    className={`w-3.5 h-3.5 transition-colors ${
+                      isActive ? 'text-[#22222B]' : 'text-slate-400'
+                    }`}
+                  />
+                  <span>{link.label}</span>
+                  {isActive && (
+                    <span className="absolute bottom-1 left-4 right-4 h-0.5 bg-[#741B22] rounded-full" />
+                  )}
                 </Link>
               );
             })}
           </nav>
 
-          {/* Right Action: Auth / User Profile */}
+          {/* Right Actions / User Profile Ring */}
           <div className="hidden md:flex items-center gap-3">
             {user ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 pl-2 border-l border-[#B0BE8C]/40">
                 <div className="text-right">
-                  <div className="text-sm font-bold text-slate-800 leading-tight">
-                    {user.name}
+                  <div className="text-xs font-bold text-[#22222B] leading-tight flex items-center justify-end gap-1.5">
+                    <span>{user.name}</span>
                   </div>
-                  <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                  <div className="flex items-center justify-end gap-1 mt-0.5">
                     <span
-                      className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${getRoleBadgeClass(
-                        user.role
-                      )}`}
+                      className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wide ${roleTheme.badge}`}
                     >
                       {user.role}
                     </span>
                   </div>
                 </div>
 
+                {/* Avatar with Status Ring Indicator */}
+                <div className="relative">
+                  <div
+                    className={`w-9 h-9 rounded-full bg-white flex items-center justify-center text-[#22222B] font-black text-xs ring-2 ${roleTheme.ring} ring-offset-2 ring-offset-[#F3F5F4] shadow-xs border border-[#B0BE8C]/30`}
+                  >
+                    {user.name ? user.name.slice(0, 2).toUpperCase() : 'NS'}
+                  </div>
+                  <span
+                    className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ${roleTheme.dot} ring-2 ring-white`}
+                    title="Online & Active"
+                  />
+                </div>
+
                 <button
                   onClick={logout}
                   title="Sign Out"
-                  className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100 transition-colors"
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:text-[#B92F25] hover:bg-[#B92F25]/10 transition-colors ml-1 touch-target"
                 >
-                  <LogOut className="w-5 h-5" />
+                  <LogOut className="w-4 h-4" />
                 </button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
                 <Link
                   href="/login"
-                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-slate-700 hover:text-emerald-700 hover:bg-slate-50 rounded-lg transition-colors"
+                  className="flex items-center gap-1 px-4 py-2 text-xs font-bold text-[#22222B] hover:text-[#B92F25] hover:bg-[#B0BE8C]/20 rounded-xl transition-all min-h-[44px]"
                 >
-                  <LogIn className="w-4 h-4" />
+                  <LogIn className="w-3.5 h-3.5" />
                   Log In
                 </Link>
                 <Link
                   href="/register"
-                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 rounded-lg shadow-sm shadow-emerald-700/20 hover:shadow transition-all"
+                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#B92F25] hover:bg-[#741B22] rounded-xl shadow-md transition-all duration-200 min-h-[44px]"
                 >
-                  <UserPlus className="w-4 h-4" />
+                  <Sparkles className="w-3.5 h-3.5 text-[#F7DE9D]" />
                   Get Started
                 </Link>
               </div>
             )}
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Hamburger */}
           <div className="md:hidden flex items-center gap-2">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-slate-600 hover:text-emerald-600 rounded-lg hover:bg-slate-100"
+              className="w-11 h-11 flex items-center justify-center text-[#22222B] hover:text-[#B92F25] rounded-xl hover:bg-[#B0BE8C]/20 transition-colors"
+              aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Mobile Drawer */}
-      {mobileMenuOpen && (
-        <div className="md:hidden border-t border-slate-100 bg-white px-4 pt-3 pb-5 space-y-2 animate-in slide-in-from-top-2 duration-200">
-          {navLinks.map((link) => {
-            const Icon = link.icon;
-            const isActive = pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-base font-semibold ${
-                  isActive
-                    ? 'bg-emerald-50 text-emerald-700'
-                    : 'text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                <Icon className="w-5 h-5 text-emerald-600" />
-                {link.label}
-              </Link>
-            );
-          })}
+        {/* Mobile Drawer */}
+        {mobileMenuOpen && (
+          <div className="md:hidden mt-2 p-3.5 rounded-3xl glass-panel border border-[#B0BE8C]/40 shadow-2xl animate-in slide-in-from-top-2 duration-200 space-y-2 max-h-[calc(100vh-5rem)] overflow-y-auto">
+            {navLinks.map((link) => {
+              const Icon = link.icon;
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-bold min-h-[44px] transition-all ${
+                    isActive
+                      ? 'bg-[#B0BE8C] text-[#22222B] shadow-sm'
+                      : 'text-[#22222B] hover:bg-[#B0BE8C]/20'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#22222B]' : 'text-[#B92F25]'}`} />
+                    <span>{link.label}</span>
+                  </div>
+                  <ChevronRight className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#22222B]' : 'text-slate-400'}`} />
+                </Link>
+              );
+            })}
 
-          <div className="pt-3 border-t border-slate-100">
-            {user ? (
-              <div className="space-y-3">
-                <div className="px-2">
-                  <div className="text-sm font-bold text-slate-800">{user.name}</div>
-                  <div className="text-xs text-slate-500">{user.email}</div>
-                  <span
-                    className={`inline-block mt-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${getRoleBadgeClass(
-                      user.role
-                    )}`}
+            <div className="pt-2.5 border-t border-[#B0BE8C]/30">
+              {user ? (
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-3 p-2.5 bg-white/80 rounded-2xl border border-[#B0BE8C]/30">
+                    <div
+                      className={`w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-[#22222B] font-bold shrink-0 ring-2 ${roleTheme.ring}`}
+                    >
+                      {user.name.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-black text-[#22222B] truncate">{user.name}</div>
+                      <div className="text-[11px] text-slate-500 truncate">{user.phone}</div>
+                      <span
+                        className={`inline-block mt-0.5 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${roleTheme.badge}`}
+                      >
+                        {user.role}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      logout();
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 text-xs font-bold text-[#B92F25] bg-[#B92F25]/10 hover:bg-[#B92F25]/20 rounded-xl transition-colors min-h-[44px]"
                   >
-                    Role: {user.role}
-                  </span>
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                  </button>
                 </div>
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    logout();
-                  }}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Sign Out
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                <Link
-                  href="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg text-center"
-                >
-                  <LogIn className="w-4 h-4" />
-                  Log In
-                </Link>
-                <Link
-                  href="/register"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg text-center"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  Register
-                </Link>
-              </div>
-            )}
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    href="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-center gap-1.5 px-3 py-3 text-xs font-bold text-[#22222B] bg-[#DCE5CC] hover:bg-[#B0BE8C] border border-[#B0BE8C] rounded-xl text-center transition-colors min-h-[44px]"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    Log In
+                  </Link>
+                  <Link
+                    href="/register"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-center gap-1.5 px-3 py-3 text-xs font-bold text-white bg-[#B92F25] hover:bg-[#741B22] rounded-xl text-center shadow-md transition-all min-h-[44px]"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    Register
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
+      </header>
+
+      {/* Backdrop for open mobile menu */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-40 md:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
       )}
-    </header>
+    </>
   );
 }

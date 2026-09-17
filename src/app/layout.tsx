@@ -1,8 +1,10 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import Image from 'next/image';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import Navbar from '@/components/Navbar';
+import { Leaf, HeartPulse } from 'lucide-react';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -14,9 +16,15 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export const metadata: Metadata = {
-  title: 'NutriSun | Health-Focused Daily Meal Subscriptions',
-  description: 'Smart nutrition meal subscription platform for customers, kitchens, delivery, and admins.',
+  title: 'NUTRISUN | Healthy Tasty Daily • Luxury Daily Nutrition SaaS',
+  description: 'Ultra-premium chef-crafted daily meal subscriptions with single-click take/skip control and multi-address schedule routing.',
 };
 
 export default function RootLayout({
@@ -26,19 +34,49 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 selection:bg-emerald-500 selection:text-white">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+      </head>
+      <body className="min-h-full flex flex-col bg-[#F3F5F4] text-[#22222B] selection:bg-[#B92F25] selection:text-white bg-mesh-glow">
         <AuthProvider>
           <Navbar />
-          <main className="flex-1">{children}</main>
-          <footer className="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
-            <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-              <div className="font-semibold text-slate-700">
-                NutriSun &copy; 2026. Wholesome daily nutrition delivered fresh.
+          <main className="flex-1 w-full">{children}</main>
+          <footer className="relative z-10 bg-white/80 backdrop-blur-md border-t border-[#B0BE8C]/30 py-6 sm:py-8 text-xs text-[#22222B]/70 w-full overflow-hidden">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
+                <Image
+                  src="/logo.png"
+                  alt="NUTRISUN"
+                  width={32}
+                  height={32}
+                  className="w-8 h-8 object-contain rounded-full shrink-0"
+                />
+                <div className="min-w-0">
+                  <div className="font-black text-[#22222B] flex items-center gap-2">
+                    <span>NUTRISUN</span>
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-[#F7DE9D] text-[#22222B] border border-[#F7DE9D]/80 shrink-0">
+                      Healthy Tasty Daily
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#741B22] italic font-medium break-words">
+                    Engineered daily nutrition • Precision macro balancing • Dynamic address routing
+                  </p>
+                </div>
               </div>
-              <div className="flex items-center gap-4 text-slate-500">
-                <span>Golang Backend + Next.js App Router</span>
-                <span>•</span>
-                <span className="text-emerald-600 font-medium">PostgreSQL Connected</span>
+
+              <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-[#22222B]/75 font-semibold">
+                <span className="flex items-center gap-1 text-[#3F4D25]">
+                  <Leaf className="w-3.5 h-3.5 text-[#B0BE8C]" />
+                  100% Organic Sourced
+                </span>
+                <span className="flex items-center gap-1 text-[#741B22]">
+                  <HeartPulse className="w-3.5 h-3.5 text-[#B92F25]" />
+                  Clinical Macro Precision
+                </span>
+                <span className="flex items-center gap-1.5 text-[#3F4D25] font-bold bg-[#B0BE8C]/20 px-3 py-1 rounded-full border border-[#B0BE8C]">
+                  <span className="w-2 h-2 rounded-full bg-[#B0BE8C] animate-pulse"></span>
+                  Kitchen HUD Live
+                </span>
               </div>
             </div>
           </footer>

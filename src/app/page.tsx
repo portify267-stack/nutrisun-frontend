@@ -1,333 +1,440 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { menuApi, adminApi, MenuItem, SubscriptionPlan, MealSlot } from '@/lib/api';
 import {
-  Sun,
-  UtensilsCrossed,
+  LogIn,
+  UserPlus,
+  Phone,
+  Lock,
+  User,
+  MapPin,
+  AlertCircle,
   Sparkles,
-  HeartHandshake,
-  ChefHat,
-  Truck,
-  ShieldCheck,
+  KeyRound,
   CheckCircle2,
-  ArrowRight,
-  Coffee,
-  Utensils,
-  Moon,
-  Calendar,
-  Clock,
-  Flame,
-  Check,
 } from 'lucide-react';
 
-export default function LandingPage() {
-  const { user } = useAuth();
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
-  const [activeSlot, setActiveSlot] = useState<MealSlot>('breakfast');
+export default function EntryPage() {
+  const { user, loading: authLoading, login, register, changePassword, redirectToDashboard } = useAuth();
+  const router = useRouter();
 
+  // Mode: 'login' | 'register'
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+
+  // Login form state
+  const [loginPhone, setLoginPhone] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
+  // Register form state
+  const [regName, setRegName] = useState('');
+  const [regPhone, setRegPhone] = useState('');
+  const [regAddress, setRegAddress] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+
+  // State
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Temporary password change modal
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [changingPass, setChangingPass] = useState(false);
+
+  // If user is already logged in, redirect to dashboard unless they must change password
   useEffect(() => {
-    // Load public menu
-    menuApi
-      .getMenu({ month: '09', year: '2026' })
-      .then((res) => setMenuItems(res.data.menu || []))
-      .catch((e) => console.error('Error loading menu:', e));
+    if (!authLoading && user) {
+      if (user.must_change_password) {
+        setShowChangePasswordModal(true);
+      } else {
+        redirectToDashboard(user.role);
+      }
+    }
+  }, [user, authLoading, redirectToDashboard]);
 
-    // Load plans
-    adminApi
-      .getPlans()
-      .then((res) => setPlans(res.data.plans || []))
-      .catch((e) => console.error('Error loading plans:', e));
-  }, []);
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+    setSubmitting(true);
 
-  const slotFilteredMenu = menuItems.filter((i) => i.meal_slot === activeSlot);
-
-  const getSlotIcon = (slot: MealSlot) => {
-    switch (slot) {
-      case 'breakfast':
-        return <Coffee className="w-4 h-4 text-amber-500" />;
-      case 'lunch':
-        return <Utensils className="w-4 h-4 text-emerald-500" />;
-      case 'dinner':
-        return <Moon className="w-4 h-4 text-indigo-500" />;
+    try {
+      const loggedUser = await login(loginPhone.trim(), loginPassword);
+      if (loggedUser.must_change_password) {
+        setShowChangePasswordModal(true);
+      } else {
+        redirectToDashboard(loggedUser.role);
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.error || 'Invalid phone number or password.';
+      setError(msg);
+    } finally {
+      setSubmitting(false);
     }
   };
 
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+    setSubmitting(true);
+
+    try {
+      const newUser = await register(
+        regName.trim(),
+        regPhone.trim(),
+        regAddress.trim(),
+        regPassword
+      );
+      setSuccess('Registration successful! Redirecting to your dashboard...');
+      setTimeout(() => {
+        redirectToDashboard(newUser.role);
+      }, 800);
+    } catch (err: any) {
+      const msg = err.response?.data?.error || err.response?.data?.details || 'Registration failed. Please try again.';
+      setError(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleChangePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setChangingPass(true);
+
+    try {
+      await changePassword(newPassword);
+      setShowChangePasswordModal(false);
+      redirectToDashboard(user?.role);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to update password.');
+    } finally {
+      setChangingPass(false);
+    }
+  };
+
+  const handleQuickDemo = (phone: string, pass: string) => {
+    setMode('login');
+    setLoginPhone(phone);
+    setLoginPassword(pass);
+    setError(null);
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F3F5F4]">
+        <div className="w-10 h-10 border-4 border-[#B92F25] border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-20 pb-20">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-emerald-50/60 via-white to-slate-50 pt-16 sm:pt-24 pb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-bold uppercase tracking-wider mb-6 animate-in fade-in">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            NutriSun Automated Nutrition System
+    <div className="min-h-[calc(100vh-6rem)] flex items-center justify-center px-3 sm:px-4 py-6 sm:py-8 w-full max-w-full">
+      <div className="w-full max-w-md">
+        {/* Brand Header */}
+        <div className="text-center mb-5 sm:mb-6">
+          <div className="flex justify-center mb-2">
+            <Image
+              src="/logo.png"
+              alt="NUTRISUN"
+              width={76}
+              height={76}
+              priority
+              className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-md hover:scale-105 transition-transform duration-300"
+            />
           </div>
-
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-slate-900 tracking-tight max-w-4xl mx-auto leading-[1.1]">
-            Wholesome Daily Meals,{' '}
-            <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-amber-500 bg-clip-text text-transparent">
-              Engineered for Your Schedule.
-            </span>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#22222B] uppercase">
+            NUTRISUN
           </h1>
-
-          <p className="mt-6 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            Subscribe to fresh chef-crafted nutrition. Toggle single-click <strong>TAKE / SKIP</strong>, route breakfast to home and lunch to your office, and sync live with our commercial kitchen.
+          <p className="text-xs font-bold text-[#741B22] italic tracking-wider">
+            Healthy Tasty Daily
           </p>
-
-          {/* Action Buttons */}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
-            {user ? (
-              <Link
-                href={
-                  user.role === 'admin'
-                    ? '/dashboard/admin'
-                    : user.role === 'chef'
-                    ? '/dashboard/chef'
-                    : user.role === 'delivery'
-                    ? '/dashboard/delivery'
-                    : '/dashboard/customer'
-                }
-                className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-extrabold text-sm shadow-md shadow-emerald-700/20 hover:shadow-lg transition-all flex items-center gap-2"
-              >
-                Go to {user.role.toUpperCase()} Dashboard
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            ) : (
-              <>
-                <Link
-                  href="/register"
-                  className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-extrabold text-sm shadow-md shadow-emerald-700/20 hover:shadow-lg transition-all flex items-center gap-2"
-                >
-                  Start Your Meal Plan
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  href="/login"
-                  className="px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-extrabold text-sm border border-slate-200 shadow-xs transition-all"
-                >
-                  Sign In to Dashboard
-                </Link>
-              </>
-            )}
-          </div>
-
-          {/* Role Quick Cards Preview */}
-          <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto text-left">
-            <Link
-              href="/dashboard/customer"
-              className="p-4 rounded-2xl bg-white/80 backdrop-blur border border-emerald-100 hover:border-emerald-300 shadow-xs hover:shadow-md transition-all group"
-            >
-              <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <HeartHandshake className="w-4 h-4" />
-              </div>
-              <div className="font-black text-sm text-slate-900">Customer</div>
-              <div className="text-xs text-slate-500 mt-0.5">Take/Skip & multi-address slot routing</div>
-            </Link>
-
-            <Link
-              href="/dashboard/chef"
-              className="p-4 rounded-2xl bg-white/80 backdrop-blur border border-amber-100 hover:border-amber-300 shadow-xs hover:shadow-md transition-all group"
-            >
-              <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <ChefHat className="w-4 h-4" />
-              </div>
-              <div className="font-black text-sm text-slate-900">Kitchen Head</div>
-              <div className="text-xs text-slate-500 mt-0.5">Real-time cook counts with skips deducted</div>
-            </Link>
-
-            <Link
-              href="/dashboard/delivery"
-              className="p-4 rounded-2xl bg-white/80 backdrop-blur border border-blue-100 hover:border-blue-300 shadow-xs hover:shadow-md transition-all group"
-            >
-              <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <Truck className="w-4 h-4" />
-              </div>
-              <div className="font-black text-sm text-slate-900">Delivery Rider</div>
-              <div className="text-xs text-slate-500 mt-0.5">Area run-sheet & mark as delivered</div>
-            </Link>
-
-            <Link
-              href="/dashboard/admin"
-              className="p-4 rounded-2xl bg-white/80 backdrop-blur border border-purple-100 hover:border-purple-300 shadow-xs hover:shadow-md transition-all group"
-            >
-              <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <ShieldCheck className="w-4 h-4" />
-              </div>
-              <div className="font-black text-sm text-slate-900">Admin Team</div>
-              <div className="text-xs text-slate-500 mt-0.5">Payment approvals & recipe catalog</div>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Menu Showcase Section */}
-      <section id="menu" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-10">
-          <div className="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase text-emerald-700 tracking-wider mb-2">
-            <UtensilsCrossed className="w-4 h-4" />
-            Nutritional Dish Lineup
-          </div>
-          <h2 className="text-3xl font-black text-slate-900 tracking-tight">
-            Today&apos;s Fresh Prep & Recipes
-          </h2>
-          <p className="text-sm text-slate-500 mt-1">
-            Carefully curated macro-balanced ingredients prepared daily by executive chefs.
+          <p className="text-[11px] sm:text-xs text-[#22222B]/70 mt-1.5 font-medium px-2">
+            Subscription Meal Service • English-Only Platform
           </p>
-
-          {/* Slot Tabs */}
-          <div className="mt-6 inline-flex items-center p-1 bg-slate-100 rounded-xl">
-            {(['breakfast', 'lunch', 'dinner'] as MealSlot[]).map((slot) => {
-              const active = activeSlot === slot;
-              return (
-                <button
-                  key={slot}
-                  onClick={() => setActiveSlot(slot)}
-                  className={`flex items-center gap-1.5 px-5 py-2 rounded-lg text-xs font-bold capitalize transition-all ${
-                    active ? 'bg-white text-emerald-800 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  {getSlotIcon(slot)}
-                  {slot}
-                </button>
-              );
-            })}
-          </div>
         </div>
 
-        {/* Menu Cards */}
-        {slotFilteredMenu.length === 0 ? (
-          <div className="py-12 text-center text-slate-400 text-sm bg-white rounded-2xl border border-slate-200">
-            No recipes listed for {activeSlot} in this cycle. Check back soon!
+        {/* Card */}
+        <div className="glass-card rounded-3xl p-4 sm:p-8 border border-[#B0BE8C]/35 shadow-xl w-full">
+          {/* Mode Switcher */}
+          <div className="flex rounded-2xl bg-[#B0BE8C]/20 p-1 mb-5 sm:mb-6 border border-[#B0BE8C]/30">
+            <button
+              type="button"
+              onClick={() => {
+                setMode('login');
+                setError(null);
+                setSuccess(null);
+              }}
+              className={`flex-1 min-h-[44px] py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                mode === 'login'
+                  ? 'bg-white text-[#B92F25] shadow-xs border border-[#B0BE8C]/30'
+                  : 'text-[#22222B]/70 hover:text-[#22222B]'
+              }`}
+            >
+              <LogIn className="w-4 h-4 shrink-0" />
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('register');
+                setError(null);
+                setSuccess(null);
+              }}
+              className={`flex-1 min-h-[44px] py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+                mode === 'register'
+                  ? 'bg-white text-[#B92F25] shadow-xs border border-[#B0BE8C]/30'
+                  : 'text-[#22222B]/70 hover:text-[#22222B]'
+              }`}
+            >
+              <UserPlus className="w-4 h-4 shrink-0" />
+              Register
+            </button>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {slotFilteredMenu.map((item) => (
-              <div
-                key={item.id}
-                className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {item.date}
-                    </span>
-                    <span
-                      className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${
-                        item.dietary_type === 'veg'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : item.dietary_type === 'non_veg'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-amber-100 text-amber-800'
-                      }`}
-                    >
-                      {item.dietary_type}
-                    </span>
-                  </div>
-                  <h3 className="text-base font-black text-slate-900 leading-snug">
-                    {item.item_name}
-                  </h3>
+
+          {error && (
+            <div className="mb-4 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 text-[#B92F25] shrink-0 mt-0.5" />
+              <div className="break-words min-w-0">
+                <p className="font-bold">Attention</p>
+                <p className="text-rose-700 mt-0.5">{error}</p>
+              </div>
+            </div>
+          )}
+
+          {success && (
+            <div className="mb-4 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-start gap-2.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <div className="break-words min-w-0">{success}</div>
+            </div>
+          )}
+
+          {mode === 'login' ? (
+            /* LOGIN FORM */
+            <form onSubmit={handleLoginSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-[#22222B]/70 mb-1.5">
+                  Phone Number
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="tel"
+                    required
+                    value={loginPhone}
+                    onChange={(e) => setLoginPhone(e.target.value)}
+                    placeholder="e.g. 9876543213"
+                    className="w-full min-h-[44px] pl-10 pr-4 py-2.5 rounded-2xl border border-[#B0BE8C]/40 bg-white focus:outline-none focus:ring-2 focus:ring-[#B92F25]/20 focus:border-[#B0BE8C] text-base sm:text-xs font-bold transition-all text-[#22222B]"
+                  />
                 </div>
+              </div>
 
-                <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                  <span className="capitalize font-semibold text-emerald-700 flex items-center gap-1">
-                    {getSlotIcon(item.meal_slot)}
-                    {item.meal_slot} Slot
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-[#22222B]/70 mb-1.5">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="password"
+                    required
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full min-h-[44px] pl-10 pr-4 py-2.5 rounded-2xl border border-[#B0BE8C]/40 bg-white focus:outline-none focus:ring-2 focus:ring-[#B92F25]/20 focus:border-[#B0BE8C] text-base sm:text-xs font-bold transition-all text-[#22222B]"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full min-h-[44px] py-3 px-4 rounded-xl bg-[#B92F25] hover:bg-[#741B22] text-white font-black text-xs shadow-md shadow-[#B92F25]/20 hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 mt-2"
+              >
+                {submitting ? 'Authenticating...' : 'Sign In to NutriSun'}
+              </button>
+
+              <div className="mt-3 text-center">
+                <p className="text-[11px] text-slate-500">
+                  Forgot password?{' '}
+                  <span className="font-bold text-[#741B22]">
+                    Contact Admin to verify identity and get a temporary password.
                   </span>
-                  <span className="text-[11px] font-medium text-slate-400">Fresh Daily Delivery</span>
+                </p>
+              </div>
+            </form>
+          ) : (
+            /* REGISTRATION FORM */
+            <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-[#22222B]/70 mb-1">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    required
+                    value={regName}
+                    onChange={(e) => setRegName(e.target.value)}
+                    placeholder="Your Name"
+                    className="w-full min-h-[44px] pl-10 pr-4 py-2.5 rounded-2xl border border-[#B0BE8C]/40 bg-white focus:outline-none focus:ring-2 focus:ring-[#B92F25]/20 focus:border-[#B0BE8C] text-base sm:text-xs font-bold text-[#22222B]"
+                  />
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </section>
 
-      {/* Subscription Plans Section */}
-      <section id="plans" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase text-amber-700 tracking-wider mb-2">
-            <Sparkles className="w-4 h-4" />
-            Simple Transparent Pricing
-          </div>
-          <h2 className="text-3xl font-black text-slate-900 tracking-tight">
-            Subscription Packages
-          </h2>
-          <p className="text-sm text-slate-500 mt-1">
-            Choose a recurring plan with automatic meal scheduling and pause protection.
-          </p>
-        </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-[#22222B]/70 mb-1">
+                  Phone Number (Unique)
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="tel"
+                    required
+                    value={regPhone}
+                    onChange={(e) => setRegPhone(e.target.value)}
+                    placeholder="e.g. 9876543214"
+                    className="w-full min-h-[44px] pl-10 pr-4 py-2.5 rounded-2xl border border-[#B0BE8C]/40 bg-white focus:outline-none focus:ring-2 focus:ring-[#B92F25]/20 focus:border-[#B0BE8C] text-base sm:text-xs font-bold text-[#22222B]"
+                  />
+                </div>
+              </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {plans.map((plan, idx) => {
-            const isFeatured = idx === 1 || plan.days_count === 30;
-            return (
-              <div
-                key={plan.id}
-                className={`rounded-3xl p-8 border flex flex-col justify-between transition-all ${
-                  isFeatured
-                    ? 'bg-gradient-to-b from-emerald-900 to-slate-900 text-white border-emerald-700 shadow-xl shadow-emerald-900/20 md:-translate-y-2'
-                    : 'bg-white text-slate-900 border-slate-200 shadow-sm'
-                }`}
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-[#22222B]/70 mb-1">
+                  Delivery Address
+                </label>
+                <div className="relative">
+                  <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 -translate-y-1/2" />
+                  <textarea
+                    required
+                    rows={2}
+                    value={regAddress}
+                    onChange={(e) => setRegAddress(e.target.value)}
+                    placeholder="Full residential / work delivery address"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-[#B0BE8C]/40 bg-white focus:outline-none focus:ring-2 focus:ring-[#B92F25]/20 focus:border-[#B0BE8C] text-base sm:text-xs font-bold text-[#22222B] resize-none"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Note: Any later address changes must be handled by Admin.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-[#22222B]/70 mb-1">
+                  Password (min. 6 chars)
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full min-h-[44px] pl-10 pr-4 py-2.5 rounded-2xl border border-[#B0BE8C]/40 bg-white focus:outline-none focus:ring-2 focus:ring-[#B92F25]/20 focus:border-[#B0BE8C] text-base sm:text-xs font-bold text-[#22222B]"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full min-h-[44px] py-3 px-4 rounded-xl bg-[#B92F25] hover:bg-[#741B22] text-white font-black text-xs shadow-md shadow-[#B92F25]/20 hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 mt-2"
               >
-                <div>
-                  {isFeatured && (
-                    <span className="inline-block px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-400 text-amber-950 mb-4">
-                      Most Popular
-                    </span>
-                  )}
-                  <h3 className="text-xl font-black">{plan.name}</h3>
-                  <p className={`text-xs mt-1 ${isFeatured ? 'text-emerald-200' : 'text-slate-500'}`}>
-                    Continuous fresh meal delivery for {plan.days_count} consecutive days.
-                  </p>
+                {submitting ? 'Registering...' : 'Create Customer Account'}
+              </button>
+            </form>
+          )}
 
-                  <div className="mt-6 flex items-baseline gap-1">
-                    <span className="text-4xl font-black">${plan.price}</span>
-                    <span className={`text-xs ${isFeatured ? 'text-slate-300' : 'text-slate-500'}`}>
-                      / {plan.days_count} days
-                    </span>
-                  </div>
-
-                  <ul className="mt-8 space-y-3 text-xs">
-                    <li className="flex items-center gap-2.5">
-                      <CheckCircle2 className={`w-4 h-4 shrink-0 ${isFeatured ? 'text-emerald-400' : 'text-emerald-600'}`} />
-                      <span>3 Meals Daily (Breakfast, Lunch, Dinner)</span>
-                    </li>
-                    <li className="flex items-center gap-2.5">
-                      <CheckCircle2 className={`w-4 h-4 shrink-0 ${isFeatured ? 'text-emerald-400' : 'text-emerald-600'}`} />
-                      <span>Single-Click Take / Skip Anytime</span>
-                    </li>
-                    <li className="flex items-center gap-2.5">
-                      <CheckCircle2 className={`w-4 h-4 shrink-0 ${isFeatured ? 'text-emerald-400' : 'text-emerald-600'}`} />
-                      <span>Split Routing: Home & Office</span>
-                    </li>
-                    <li className="flex items-center gap-2.5">
-                      <CheckCircle2 className={`w-4 h-4 shrink-0 ${isFeatured ? 'text-emerald-400' : 'text-emerald-600'}`} />
-                      <span>Chef Prepared & Doorstep Delivery</span>
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="mt-8 pt-4">
-                  <Link
-                    href="/register"
-                    className={`w-full py-3 px-4 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition-all ${
-                      isFeatured
-                        ? 'bg-amber-400 hover:bg-amber-300 text-amber-950 shadow-md'
-                        : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                    }`}
-                  >
-                    Subscribe Now
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
+          {/* Quick Demo Credentials (Non-Production Only) */}
+          {process.env.NODE_ENV !== 'production' && (
+            <div className="mt-6 pt-5 border-t border-[#B0BE8C]/30">
+              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[#741B22] mb-2.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#F7DE9D]" />
+                Quick Demo Logins (Phone + Pass)
               </div>
-            );
-          })}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemo('9876543213', 'customer123')}
+                  className="p-3 rounded-2xl border border-[#B0BE8C]/40 hover:border-[#B0BE8C] hover:bg-[#B0BE8C]/20 text-left transition-all min-h-[44px] flex flex-col justify-center"
+                >
+                  <div className="font-black text-[#22222B]">Customer (Alice)</div>
+                  <div className="text-[11px] text-slate-400">9876543213</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemo('9876543210', 'adminpassword123')}
+                  className="p-3 rounded-2xl border border-[#B0BE8C]/40 hover:border-[#741B22] hover:bg-[#741B22]/10 text-left transition-all min-h-[44px] flex flex-col justify-center"
+                >
+                  <div className="font-black text-[#22222B]">Admin</div>
+                  <div className="text-[11px] text-slate-400">9876543210</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemo('9876543211', 'chefpassword123')}
+                  className="p-3 rounded-2xl border border-[#B0BE8C]/40 hover:border-[#F7DE9D] hover:bg-[#F7DE9D]/30 text-left transition-all min-h-[44px] flex flex-col justify-center"
+                >
+                  <div className="font-black text-[#22222B]">Head Chef</div>
+                  <div className="text-[11px] text-slate-400">9876543211</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemo('9876543212', 'deliverypassword123')}
+                  className="p-3 rounded-2xl border border-[#B0BE8C]/40 hover:border-[#B92F25] hover:bg-[#B92F25]/10 text-left transition-all min-h-[44px] flex flex-col justify-center"
+                >
+                  <div className="font-black text-[#22222B]">Delivery Rider</div>
+                  <div className="text-[11px] text-slate-400">9876543212</div>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-      </section>
+      </div>
+
+      {/* Force Change Temporary Password Modal */}
+      {showChangePasswordModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-3xl p-5 sm:p-8 max-w-md w-full border border-[#F7DE9D] shadow-2xl max-h-[90vh] overflow-y-auto my-auto">
+            <div className="flex items-center gap-3 mb-4 text-[#741B22]">
+              <KeyRound className="w-7 h-7 text-[#741B22] shrink-0" />
+              <div>
+                <h3 className="text-lg font-black text-[#22222B]">Password Change Required</h3>
+                <p className="text-xs text-slate-500">You logged in using a temporary password. Please set your new password.</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleChangePasswordSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[#22222B] mb-1">New Password (min 6 chars)</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new permanent password"
+                  className="w-full min-h-[44px] px-4 py-2.5 rounded-xl border border-[#B0BE8C]/40 text-base sm:text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#B92F25]/20 focus:border-[#B0BE8C]"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={changingPass}
+                className="w-full min-h-[44px] py-3 rounded-xl bg-[#B92F25] hover:bg-[#741B22] text-white font-black text-xs transition-all shadow-md"
+              >
+                {changingPass ? 'Updating...' : 'Set Permanent Password & Continue'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

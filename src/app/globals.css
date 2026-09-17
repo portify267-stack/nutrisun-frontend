@@ -1,26 +1,215 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #F3F5F4;
+  --foreground: #22222B;
+  --canvas: #F3F5F4;
+  --sage-green: #B0BE8C;
+  --sage-green-pale: #DCE5CC;
+  --sage-green-dark: #3F4D25;
+  --sage-text: #3F4D25;
+  --warm-butter: #F7DE9D;
+  --warm-butter-light: #FCF1D3;
+  --berry-crimson: #B92F25;
+  --deep-maroon: #741B22;
+  --charcoal-slate: #22222B;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-offwhite: #F3F5F4;
+  --color-sage: #B0BE8C;
+  --color-sage-pale: #DCE5CC;
+  --color-butter: #F7DE9D;
+  --color-berry: #B92F25;
+  --color-burgundy: #741B22;
+  --color-charcoal: #22222B;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #F3F5F4;
+  color: #22222B;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure mobile form fields never trigger iOS Safari auto-zoom */
+@media screen and (max-width: 640px) {
+  input[type="text"],
+  input[type="tel"],
+  input[type="password"],
+  input[type="email"],
+  input[type="number"],
+  input[type="date"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Glassmorphic Luxury Utilities with Sage, Butter, Berry & Charcoal Brand Accents */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.90);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(176, 190, 140, 0.35);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(176, 190, 140, 0.35);
+  box-shadow: 0 4px 20px -2px rgba(34, 34, 43, 0.04), 0 2px 8px -1px rgba(34, 34, 43, 0.03);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(176, 190, 140, 0.65);
+  box-shadow: 0 20px 30px -10px rgba(34, 34, 43, 0.08), 0 10px 15px -5px rgba(34, 34, 43, 0.04);
+}
+
+.glass-pill {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(176, 190, 140, 0.45);
+}
+
+/* Brand Button & Badge Utility Classes */
+.btn-berry {
+  background-color: #B92F25;
+  color: #ffffff;
+  box-shadow: 0 4px 14px 0 rgba(185, 47, 37, 0.28);
+  border-radius: 0.75rem;
+  transition: all 0.2s ease-in-out;
+  min-height: 44px;
+}
+.btn-berry:hover {
+  background-color: #741B22;
+  box-shadow: 0 6px 20px 0 rgba(116, 27, 34, 0.32);
+}
+
+.btn-secondary {
+  background-color: #DCE5CC;
+  color: #22222B;
+  border: 1px solid #B0BE8C;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  transition: all 0.2s ease-in-out;
+  min-height: 44px;
+}
+.btn-secondary:hover {
+  background-color: #B0BE8C;
+  color: #22222B;
+}
+
+.btn-butter {
+  background-color: #F7DE9D;
+  color: #22222B;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  transition: all 0.2s ease-in-out;
+  min-height: 44px;
+}
+.btn-butter:hover {
+  background-color: #FCF1D3;
+}
+
+.badge-sage {
+  background-color: rgba(176, 190, 140, 0.25);
+  color: #3F4D25;
+  border: 1px solid #B0BE8C;
+}
+
+.badge-pending {
+  background-color: #F7DE9D;
+  color: #22222B;
+  border: 1px solid #F7DE9D;
+}
+
+/* Ambient Radial Glow Gradients with Berry, Warm Butter & Sage */
+.bg-mesh-glow {
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(185, 47, 37, 0.04) 0%, transparent 40%),
+    radial-gradient(circle at 90% 10%, rgba(247, 222, 157, 0.25) 0%, transparent 45%),
+    radial-gradient(circle at 50% 80%, rgba(176, 190, 140, 0.12) 0%, transparent 50%);
+}
+
+/* Micro-animations */
+@keyframes float-subtle {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-float-subtle {
+  animation: float-subtle 4s ease-in-out infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(176, 190, 140, 0.5);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 8px rgba(176, 190, 140, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(176, 190, 140, 0);
+  }
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2.5s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f4;
+}
+::-webkit-scrollbar-thumb {
+  background: #B0BE8C;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3F4D25;
+}
+
+/* Hide scrollbar utility for touch scrollable tabs */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Touch targets helper */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
