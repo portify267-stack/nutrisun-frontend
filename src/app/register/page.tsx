@@ -70,17 +70,32 @@ export default function RegisterPage() {
       setSuccess(null);
       if (!err.response || err.code === 'ERR_NETWORK' || err.code === 'ECONNABORTED') {
         setError('Unable to connect to the server. Please check your network connection or try again shortly.');
-      } else if (err.response.status === 409) {
-        setError(
-          err.response.data?.error ||
-            'This phone number is already registered. Please sign in or use a different phone number.'
-        );
-      } else if (err.response.data?.error) {
-        setError(err.response.data.error);
-      } else if (err.response.data?.details) {
-        setError(err.response.data.details);
       } else {
-        setError('Registration failed. Please check your inputs and try again.');
+        const data = err.response.data;
+        let msg = '';
+        if (typeof data === 'string' && data.trim()) {
+          msg = data.trim();
+        } else if (data && typeof data === 'object') {
+          if (typeof data.error === 'string' && data.error.trim()) {
+            msg = data.error.trim();
+          } else if (data.error && typeof data.error === 'object' && typeof data.error.message === 'string') {
+            msg = data.error.message.trim();
+          } else if (typeof data.details === 'string' && data.details.trim()) {
+            msg = data.details.trim();
+          } else if (typeof data.message === 'string' && data.message.trim()) {
+            msg = data.message.trim();
+          }
+        }
+        if (!msg) {
+          if (err.response.status === 409) {
+            msg = 'This phone number is already registered. Please sign in or use a different phone number.';
+          } else if (err.response.status === 404) {
+            msg = 'Registration endpoint could not be reached. Please check the backend connection.';
+          } else {
+            msg = 'Registration failed. Please check your inputs and try again.';
+          }
+        }
+        setError(msg);
       }
     } finally {
       setLoading(false);

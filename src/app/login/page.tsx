@@ -33,6 +33,37 @@ export default function LoginPage() {
   const [newPassword, setNewPassword] = useState('');
   const [changingPass, setChangingPass] = useState(false);
 
+  const extractErrorMessage = (err: any): string => {
+    if (!err) return 'Authentication failed. Please check your credentials and try again.';
+    if (!err.response || err.code === 'ERR_NETWORK' || err.code === 'ECONNABORTED') {
+      return 'Unable to reach the NutriSun API server. Please check your network connection or verify that the server is online.';
+    }
+    const status = err.response.status;
+    const data = err.response.data;
+
+    if (typeof data === 'string' && data.trim()) {
+      return data.trim();
+    }
+    if (data && typeof data === 'object') {
+      if (typeof data.error === 'string' && data.error.trim()) {
+        return data.error.trim();
+      }
+      if (data.error && typeof data.error === 'object' && typeof data.error.message === 'string') {
+        return data.error.message.trim();
+      }
+      if (typeof data.message === 'string' && data.message.trim()) {
+        return data.message.trim();
+      }
+    }
+    if (status === 401) {
+      return 'Invalid phone number or password. Please check your credentials.';
+    }
+    if (status === 404) {
+      return 'Authentication endpoint could not be reached. Please check the backend connection.';
+    }
+    return 'Authentication failed. Please check your phone number and password and try again.';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return; // Prevent duplicate concurrent submissions
@@ -47,20 +78,11 @@ export default function LoginPage() {
         redirectToDashboard(user.role);
       }
     } catch (err: any) {
-      if (!err.response || err.code === 'ERR_NETWORK' || err.code === 'ECONNABORTED') {
-        setError('Unable to reach the NutriSun API server. Please check your network connection or verify that the server is online.');
-      } else if (err.response.status === 401) {
-        setError(err.response.data?.error || 'Invalid phone number or password. Please check your credentials.');
-      } else if (err.response.data?.error) {
-        setError(err.response.data.error);
-      } else {
-        setError('Authentication failed. Please check your phone number and password and try again.');
-      }
+      setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
-
 
   const handleChangePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +94,11 @@ export default function LoginPage() {
       setShowChangePasswordModal(false);
       redirectToDashboard();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to update password.');
+      const msg =
+        typeof err.response?.data?.error === 'string'
+          ? err.response.data.error
+          : err.response?.data?.message || 'Failed to update password.';
+      setError(msg);
     } finally {
       setChangingPass(false);
     }
