@@ -45,6 +45,7 @@ backups/
 !package.json
 !package-lock.json
 !tsconfig.json
+!vercel.json
 
 # Typescript build cache
 *.tsbuildinfo
