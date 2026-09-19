@@ -1245,8 +1245,8 @@ export default function CustomerDashboard() {
                         </div>
                       </div>
 
-                      {/* Mobile convenience buttons: Copy UPI ID and Download QR */}
-                      <div className="grid grid-cols-2 gap-2 pt-1">
+                      {/* Mobile convenience buttons: Copy UPI ID, Pay via UPI, and Download QR */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
                         <button
                           type="button"
                           onClick={handleCopyUpiId}
@@ -1257,8 +1257,16 @@ export default function CustomerDashboard() {
                         </button>
 
                         <a
+                          href={`upi://pay?pa=${PAYMENT_CONFIG.upiId}&pn=${encodeURIComponent(PAYMENT_CONFIG.accountHolder)}&am=${purchaseSuccessData.amount.toFixed(2)}&cu=INR&tn=NutriSunSub${subId}`}
+                          className="min-h-[44px] py-2 px-3 rounded-xl bg-white border border-[#B0BE8C] hover:bg-[#B0BE8C]/20 text-[#22222B] text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs text-center"
+                        >
+                          <ExternalLink className="w-4 h-4 text-[#741B22] shrink-0" />
+                          <span>Pay via UPI</span>
+                        </a>
+
+                        <a
                           href={PAYMENT_CONFIG.qrAssetPath}
-                          download="NutriSun_GooglePay_QR.png"
+                          download="NutriSun_ICICIBank_UPI_QR.jpg"
                           className="min-h-[44px] py-2 px-3 rounded-xl bg-white border border-[#B0BE8C] hover:bg-[#B0BE8C]/20 text-[#22222B] text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs text-center"
                         >
                           <Download className="w-4 h-4 text-[#741B22] shrink-0" />
@@ -1267,12 +1275,12 @@ export default function CustomerDashboard() {
                       </div>
                     </div>
 
-                    {/* GooglePay QR Image (Displayed clearly without cropping, stretching, overlays, or changes) */}
+                    {/* ICICI Bank UPI QR Image (Displayed clearly without cropping, stretching, overlays, or changes) */}
                     <div className="p-3 sm:p-4 rounded-2xl bg-white border border-[#B0BE8C]/40 flex flex-col items-center justify-center shadow-xs">
                       <img
                         src={PAYMENT_CONFIG.qrAssetPath}
-                        alt="NutriSun GooglePay UPI QR Code"
-                        className="w-full max-w-[220px] sm:max-w-[240px] h-auto object-contain rounded-xl"
+                        alt="ICICI Bank UPI QR Code - Syed Kaleel Awn M"
+                        className="w-full max-w-[260px] sm:max-w-[280px] h-auto object-contain rounded-xl"
                       />
                     </div>
 
@@ -1429,8 +1437,8 @@ export default function CustomerDashboard() {
                 </div>
               </div>
 
-              {/* Mobile convenience buttons: Copy UPI ID and Download QR */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
+              {/* Mobile convenience buttons: Copy UPI ID, Pay via UPI, and Download QR */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
                 <button
                   type="button"
                   onClick={handleCopyUpiId}
@@ -1441,8 +1449,16 @@ export default function CustomerDashboard() {
                 </button>
 
                 <a
+                  href={`upi://pay?pa=${PAYMENT_CONFIG.upiId}&pn=${encodeURIComponent(PAYMENT_CONFIG.accountHolder)}&am=${(activePaymentModalSub.plan_snapshot_price || activePaymentModalSub.plan?.price || 0).toFixed(2)}&cu=INR&tn=NutriSunSub${activePaymentModalSub.id}`}
+                  className="min-h-[44px] py-2 px-3 rounded-xl bg-white border border-[#B0BE8C] hover:bg-[#B0BE8C]/20 text-[#22222B] text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs text-center"
+                >
+                  <ExternalLink className="w-4 h-4 text-[#741B22] shrink-0" />
+                  <span>Pay via UPI</span>
+                </a>
+
+                <a
                   href={PAYMENT_CONFIG.qrAssetPath}
-                  download="NutriSun_GooglePay_QR.png"
+                  download="NutriSun_ICICIBank_UPI_QR.jpg"
                   className="min-h-[44px] py-2 px-3 rounded-xl bg-white border border-[#B0BE8C] hover:bg-[#B0BE8C]/20 text-[#22222B] text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs text-center"
                 >
                   <Download className="w-4 h-4 text-[#741B22] shrink-0" />
@@ -1451,12 +1467,12 @@ export default function CustomerDashboard() {
               </div>
             </div>
 
-            {/* GooglePay QR Image */}
+            {/* ICICI Bank UPI QR Image */}
             <div className="p-3 sm:p-4 rounded-2xl bg-white border border-[#B0BE8C]/40 flex flex-col items-center justify-center shadow-xs">
               <img
                 src={PAYMENT_CONFIG.qrAssetPath}
-                alt="NutriSun GooglePay UPI QR Code"
-                className="w-full max-w-[220px] sm:max-w-[240px] h-auto object-contain rounded-xl"
+                alt="ICICI Bank UPI QR Code - Syed Kaleel Awn M"
+                className="w-full max-w-[260px] sm:max-w-[280px] h-auto object-contain rounded-xl"
               />
             </div>
 

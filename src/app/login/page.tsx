@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { LogIn, AlertCircle, ArrowRight, Lock, Phone, Sparkles, KeyRound } from 'lucide-react';
+import { LogIn, AlertCircle, ArrowRight, Lock, Phone, KeyRound, CheckCircle2 } from 'lucide-react';
 
 export default function LoginPage() {
   const { login, changePassword, redirectToDashboard } = useAuth();
@@ -14,7 +14,19 @@ export default function LoginPage() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('notice') === 'password_changed') {
+        setSuccessMessage(
+          'Password updated successfully. For security, your previous session was terminated. Please log in with your new password.'
+        );
+      }
+    }
+  }, []);
 
   // Temporary password change modal
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
@@ -66,12 +78,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickLogin = (demoPhone: string, demoPass: string) => {
-    setPhone(demoPhone);
-    setPassword(demoPass);
-    setError(null);
-  };
-
   return (
     <div className="min-h-[calc(100vh-10rem)] flex items-center justify-center px-3 sm:px-4 py-8 sm:py-12 w-full max-w-full">
       <div className="w-full max-w-md">
@@ -100,6 +106,16 @@ export default function LoginPage() {
 
         {/* Form Card */}
         <div className="glass-card rounded-3xl p-5 sm:p-8 border border-[#B0BE8C]/35 shadow-xl w-full">
+          {successMessage && (
+            <div className="mb-5 sm:mb-6 p-3.5 sm:p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs sm:text-sm flex items-start gap-3 animate-in slide-in-from-top-1">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              <div className="break-words min-w-0">
+                <p className="font-bold">Password Updated Successfully</p>
+                <p className="text-xs text-emerald-700 mt-0.5">{successMessage}</p>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="mb-5 sm:mb-6 p-3.5 sm:p-4 rounded-2xl bg-rose-50/90 border border-rose-200 text-rose-800 text-xs sm:text-sm flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-[#B92F25] shrink-0 mt-0.5" />
@@ -164,50 +180,6 @@ export default function LoginPage() {
               Forgot password? Contact Admin to verify your account and obtain a temporary password.
             </p>
           </form>
-
-          {/* Quick Demo Credentials (Non-Production Only) */}
-          {process.env.NODE_ENV !== 'production' && (
-            <div className="mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-[#B0BE8C]/30">
-              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[#741B22] mb-3">
-                <Sparkles className="w-3.5 h-3.5 text-[#F7DE9D]" />
-                Quick Demo Logins (Development Mode)
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin('9876543213', 'customer123')}
-                  className="p-3 rounded-2xl border border-[#B0BE8C]/40 hover:border-[#B0BE8C] hover:bg-[#B0BE8C]/20 text-left transition-all group min-h-[44px] flex flex-col justify-center"
-                >
-                  <div className="font-black text-[#22222B] group-hover:text-[#3F4D25]">Alice (Customer)</div>
-                  <div className="text-[11px] text-slate-400">9876543213</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin('9876543210', 'adminpassword123')}
-                  className="p-3 rounded-2xl border border-[#B0BE8C]/40 hover:border-[#741B22] hover:bg-[#741B22]/10 text-left transition-all group min-h-[44px] flex flex-col justify-center"
-                >
-                  <div className="font-black text-[#22222B] group-hover:text-[#741B22]">Executive Admin</div>
-                  <div className="text-[11px] text-slate-400">9876543210</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin('9876543211', 'chefpassword123')}
-                  className="p-3 rounded-2xl border border-[#B0BE8C]/40 hover:border-[#F7DE9D] hover:bg-[#F7DE9D]/30 text-left transition-all group min-h-[44px] flex flex-col justify-center"
-                >
-                  <div className="font-black text-[#22222B]">Mario (Chef)</div>
-                  <div className="text-[11px] text-slate-400">9876543211</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin('9876543212', 'deliverypassword123')}
-                  className="p-3 rounded-2xl border border-[#B0BE8C]/40 hover:border-[#B92F25] hover:bg-[#B92F25]/10 text-left transition-all group min-h-[44px] flex flex-col justify-center"
-                >
-                  <div className="font-black text-[#22222B] group-hover:text-[#B92F25]">Dave (Rider)</div>
-                  <div className="text-[11px] text-slate-400">9876543212</div>
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Footer Link */}

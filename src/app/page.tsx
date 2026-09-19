@@ -12,7 +12,6 @@ import {
   User,
   MapPin,
   AlertCircle,
-  Sparkles,
   KeyRound,
   CheckCircle2,
 } from 'lucide-react';
@@ -115,13 +114,6 @@ export default function EntryPage() {
     } finally {
       setChangingPass(false);
     }
-  };
-
-  const handleQuickDemo = (phone: string, pass: string) => {
-    setMode('login');
-    setLoginPhone(phone);
-    setLoginPassword(pass);
-    setError(null);
   };
 
   if (authLoading) {
@@ -350,50 +342,6 @@ export default function EntryPage() {
                 {submitting ? 'Registering...' : 'Create Customer Account'}
               </button>
             </form>
-          )}
-
-          {/* Quick Demo Credentials (Non-Production Only) */}
-          {process.env.NODE_ENV !== 'production' && (
-            <div className="mt-6 pt-5 border-t border-[#B0BE8C]/30">
-              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[#741B22] mb-2.5">
-                <Sparkles className="w-3.5 h-3.5 text-[#F7DE9D]" />
-                Quick Demo Logins (Phone + Pass)
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemo('9876543213', 'customer123')}
-                  className="p-3 rounded-2xl border border-[#B0BE8C]/40 hover:border-[#B0BE8C] hover:bg-[#B0BE8C]/20 text-left transition-all min-h-[44px] flex flex-col justify-center"
-                >
-                  <div className="font-black text-[#22222B]">Customer (Alice)</div>
-                  <div className="text-[11px] text-slate-400">9876543213</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemo('9876543210', 'adminpassword123')}
-                  className="p-3 rounded-2xl border border-[#B0BE8C]/40 hover:border-[#741B22] hover:bg-[#741B22]/10 text-left transition-all min-h-[44px] flex flex-col justify-center"
-                >
-                  <div className="font-black text-[#22222B]">Admin</div>
-                  <div className="text-[11px] text-slate-400">9876543210</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemo('9876543211', 'chefpassword123')}
-                  className="p-3 rounded-2xl border border-[#B0BE8C]/40 hover:border-[#F7DE9D] hover:bg-[#F7DE9D]/30 text-left transition-all min-h-[44px] flex flex-col justify-center"
-                >
-                  <div className="font-black text-[#22222B]">Head Chef</div>
-                  <div className="text-[11px] text-slate-400">9876543211</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemo('9876543212', 'deliverypassword123')}
-                  className="p-3 rounded-2xl border border-[#B0BE8C]/40 hover:border-[#B92F25] hover:bg-[#B92F25]/10 text-left transition-all min-h-[44px] flex flex-col justify-center"
-                >
-                  <div className="font-black text-[#22222B]">Delivery Rider</div>
-                  <div className="text-[11px] text-slate-400">9876543212</div>
-                </button>
-              </div>
-            </div>
           )}
         </div>
       </div>

@@ -36,8 +36,10 @@ import {
   Image as ImageIcon,
   AlertTriangle,
   Loader2,
+  KeyRound,
 } from 'lucide-react';
 import SalesAnalyticsModule from '@/components/SalesAnalyticsModule';
+import ChangePasswordModal from '@/components/ChangePasswordModal';
 
 export default function AdminDashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -47,6 +49,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<
     'pending' | 'subscriptions' | 'requests' | 'customers' | 'staff' | 'plans' | 'menu' | 'reallocate' | 'analytics'
   >('pending');
+  const [showAdminChangePassword, setShowAdminChangePassword] = useState(false);
 
   // Badge counts
   const [counts, setCounts] = useState<PendingCountsResponse>({
@@ -149,6 +152,12 @@ export default function AdminDashboard() {
   const [resetCust, setResetCust] = useState<User | null>(null);
   const [tempPassword, setTempPassword] = useState('');
   const [savingTempPass, setSavingTempPass] = useState(false);
+
+  // Staff Password Reset & Status Toggle State
+  const [resetStaffMember, setResetStaffMember] = useState<User | null>(null);
+  const [staffTempPassword, setStaffTempPassword] = useState('');
+  const [savingStaffTempPass, setSavingStaffTempPass] = useState(false);
+  const [togglingStaffId, setTogglingStaffId] = useState<number | null>(null);
 
   // Create Staff Modal
   const [showStaffModal, setShowStaffModal] = useState(false);
@@ -381,6 +390,35 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleToggleStaffStatus = async (staffId: number, currentLocked: boolean) => {
+    setTogglingStaffId(staffId);
+    try {
+      const res = await adminApi.toggleStaffStatus(staffId, { is_active: currentLocked });
+      setNotification(res.data.message);
+      await loadAll();
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to update staff status.');
+    } finally {
+      setTogglingStaffId(null);
+    }
+  };
+
+  const handleSaveStaffTempPassword = async () => {
+    if (!resetStaffMember) return;
+    setSavingStaffTempPass(true);
+    try {
+      const res = await adminApi.resetStaffPassword(resetStaffMember.id, { temporary_password: staffTempPassword });
+      setNotification(res.data.message);
+      setResetStaffMember(null);
+      setStaffTempPassword('');
+      await loadAll();
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to reset staff password.');
+    } finally {
+      setSavingStaffTempPass(false);
+    }
+  };
+
   const handleSavePlan = async () => {
     setSavingPlan(true);
     try {
@@ -507,12 +545,21 @@ export default function AdminDashboard() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full md:w-auto">
+          <button
+            type="button"
+            onClick={() => setShowAdminChangePassword(true)}
+            className="w-full sm:w-auto min-h-[44px] px-4 py-3 rounded-2xl bg-white hover:bg-slate-50 border border-[#B0BE8C]/50 text-[#22222B] font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2"
+            title="Change Account Password"
+          >
+            <KeyRound className="w-4 h-4 text-[#741B22] shrink-0" />
+            <span>Change Password</span>
+          </button>
           <button
             type="button"
             onClick={handleDownloadFullExcel}
             disabled={exportingFullExcel}
-            className="w-full md:w-auto min-h-[44px] px-5 py-3 rounded-2xl bg-[#DCE5CC] hover:bg-[#B0BE8C] border border-[#B0BE8C] text-[#22222B] font-black text-xs shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full sm:w-auto min-h-[44px] px-5 py-3 rounded-2xl bg-[#DCE5CC] hover:bg-[#B0BE8C] border border-[#B0BE8C] text-[#22222B] font-black text-xs shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {exportingFullExcel ? (
               <Loader2 className="w-4 h-4 text-[#3F4D25] animate-spin shrink-0" />
@@ -721,8 +768,13 @@ export default function AdminDashboard() {
 
           {/* Mobile Cards View */}
           <div className="block md:hidden space-y-3">
-            {subscriptions.map((s) => (
-              <div key={s.id} className="glass-card rounded-2xl p-4 border border-[#B0BE8C]/35 shadow-xs space-y-2.5">
+            {subscriptions.length === 0 ? (
+              <div className="text-center py-10 px-4 rounded-3xl bg-white border border-[#B0BE8C]/30 text-xs text-slate-500 font-bold">
+                No customer subscriptions found.
+              </div>
+            ) : (
+              subscriptions.map((s) => (
+                <div key={s.id} className="glass-card rounded-2xl p-4 border border-[#B0BE8C]/35 shadow-xs space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-xs text-[#22222B]">Sub #{s.id}</span>
                   <div>
@@ -764,7 +816,7 @@ export default function AdminDashboard() {
                   </button>
                 )}
               </div>
-            ))}
+            )))}
           </div>
 
           {/* Desktop Table View */}
@@ -784,7 +836,14 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#B0BE8C]/20">
-                {subscriptions.map((s) => (
+                {subscriptions.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="p-8 text-center text-slate-400 font-bold">
+                      No customer subscriptions found.
+                    </td>
+                  </tr>
+                ) : (
+                  subscriptions.map((s) => (
                   <tr key={s.id} className="hover:bg-[#B0BE8C]/10 transition-colors">
                     <td className="p-3 font-bold">#{s.id}</td>
                     <td className="p-3">
@@ -849,7 +908,7 @@ export default function AdminDashboard() {
                       )}
                     </td>
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
           </div>
@@ -1280,20 +1339,130 @@ export default function AdminDashboard() {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {staff.map((s) => (
-              <div key={s.id} className="glass-card rounded-2xl p-4 border border-[#B0BE8C]/35 shadow-xs">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#B0BE8C]/25 text-[#3F4D25] border border-[#B0BE8C]/40">
-                    {s.role}
-                  </span>
-                  <span className="text-[10px] text-slate-400">ID #{s.id}</span>
-                </div>
-                <h3 className="text-sm font-black text-[#22222B] break-words">{s.name}</h3>
-                <p className="text-xs text-slate-500 font-mono mt-1">Phone: {s.phone}</p>
+          {staff.length === 0 ? (
+            <div className="text-center py-12 px-4 rounded-3xl bg-white border border-[#B0BE8C]/30 shadow-xs">
+              <p className="text-sm font-bold text-[#22222B]">No staff members found</p>
+              <p className="text-xs text-slate-500 mt-1">Use "Add Staff Member" above to create Chef or Delivery Rider accounts.</p>
+            </div>
+          ) : (
+            <>
+              {/* Mobile Card Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:hidden">
+                {staff.map((s) => (
+                  <div key={s.id} className="glass-card rounded-2xl p-4 border border-[#B0BE8C]/35 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#B0BE8C]/25 text-[#3F4D25] border border-[#B0BE8C]/40">
+                        {s.role}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                        s.credential_locked
+                          ? 'bg-rose-50 text-rose-700 border-rose-200'
+                          : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      }`}>
+                        {s.credential_locked ? 'Inactive' : 'Active'}
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-[#22222B] break-words">{s.name}</h3>
+                      <p className="text-xs text-slate-500 font-mono mt-0.5">Phone: {s.phone}</p>
+                      {s.must_change_password && (
+                        <p className="text-[10px] text-amber-700 font-bold mt-1">Password Change Required</p>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[#B0BE8C]/20">
+                      <button
+                        onClick={() => handleToggleStaffStatus(s.id, Boolean(s.credential_locked))}
+                        disabled={togglingStaffId === s.id}
+                        className={`min-h-[44px] px-2 py-1 rounded-xl text-xs font-bold border transition-colors flex items-center justify-center ${
+                          s.credential_locked
+                            ? 'bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-800'
+                            : 'bg-rose-50 hover:bg-rose-100 border-rose-300 text-rose-800'
+                        }`}
+                      >
+                        {togglingStaffId === s.id ? 'Updating...' : s.credential_locked ? 'Activate' : 'Deactivate'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setResetStaffMember(s);
+                          setStaffTempPassword('');
+                        }}
+                        className="min-h-[44px] px-2 py-1 rounded-xl bg-[#F7DE9D] hover:bg-[#F7DE9D]/80 border border-[#F7DE9D] text-[#22222B] text-xs font-bold transition-colors flex items-center justify-center"
+                      >
+                        Reset Pass
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block glass-card rounded-3xl overflow-hidden border border-[#B0BE8C]/35 overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#F3F5F4] text-[#22222B] font-bold border-b border-[#B0BE8C]/35">
+                    <tr>
+                      <th className="p-3">ID</th>
+                      <th className="p-3">Name</th>
+                      <th className="p-3">Role</th>
+                      <th className="p-3">Phone</th>
+                      <th className="p-3">Status</th>
+                      <th className="p-3">Password Status</th>
+                      <th className="p-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#B0BE8C]/20">
+                    {staff.map((s) => (
+                      <tr key={s.id} className="hover:bg-[#B0BE8C]/10 transition-colors">
+                        <td className="p-3 font-bold">#{s.id}</td>
+                        <td className="p-3 font-bold text-[#22222B]">{s.name}</td>
+                        <td className="p-3 uppercase font-bold text-[#741B22]">{s.role}</td>
+                        <td className="p-3 font-mono">{s.phone}</td>
+                        <td className="p-3">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                            s.credential_locked
+                              ? 'bg-rose-50 text-rose-700 border-rose-200'
+                              : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          }`}>
+                            {s.credential_locked ? 'Inactive' : 'Active'}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          {s.must_change_password ? (
+                            <span className="px-2 py-0.5 rounded-full bg-[#F7DE9D] text-[#22222B] border border-[#F7DE9D]/80 text-[10px] font-bold">
+                              Change Required
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 text-[10px]">Normal</span>
+                          )}
+                        </td>
+                        <td className="p-3 text-right space-x-2 whitespace-nowrap">
+                          <button
+                            onClick={() => handleToggleStaffStatus(s.id, Boolean(s.credential_locked))}
+                            disabled={togglingStaffId === s.id}
+                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors ${
+                              s.credential_locked
+                                ? 'bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-800'
+                                : 'bg-rose-50 hover:bg-rose-100 border-rose-300 text-rose-800'
+                            }`}
+                          >
+                            {togglingStaffId === s.id ? 'Updating...' : s.credential_locked ? 'Activate' : 'Deactivate'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setResetStaffMember(s);
+                              setStaffTempPassword('');
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-[#F7DE9D] hover:bg-[#F7DE9D]/80 border border-[#F7DE9D] text-[#22222B] text-[10px] font-bold transition-colors"
+                          >
+                            Set Temp Password
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -1915,6 +2084,47 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* MODAL: RESET STAFF PASSWORD */}
+      {resetStaffMember && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-[100] overflow-y-auto">
+          <div className="bg-white rounded-3xl p-5 sm:p-8 max-w-md w-full border border-[#B0BE8C]/40 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto my-auto">
+            <h3 className="text-lg font-black text-[#22222B]">Set Temporary Password</h3>
+            <p className="text-xs text-slate-500">
+              Staff Member: {resetStaffMember.name} ({resetStaffMember.phone}, {resetStaffMember.role}). They must change this password on next login.
+            </p>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Temporary Password (min 6 chars)</label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={staffTempPassword}
+                onChange={(e) => setStaffTempPassword(e.target.value)}
+                placeholder="Temporary password"
+                className="w-full min-h-[44px] px-3 py-2.5 rounded-xl border border-[#B0BE8C]/40 text-base sm:text-xs font-bold text-[#22222B] focus:outline-none focus:ring-2 focus:ring-[#B92F25]/20 focus:border-[#B0BE8C]"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setResetStaffMember(null)}
+                className="flex-1 min-h-[44px] py-2.5 px-3 rounded-xl bg-[#DCE5CC] hover:bg-[#B0BE8C] border border-[#B0BE8C] text-[#22222B] text-xs font-bold transition-colors flex items-center justify-center"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveStaffTempPassword}
+                disabled={savingStaffTempPass}
+                className="flex-1 min-h-[44px] py-2.5 px-3 rounded-xl bg-[#F7DE9D] hover:bg-[#F7DE9D]/80 border border-[#F7DE9D] text-[#22222B] text-xs font-black shadow-sm transition-colors flex items-center justify-center"
+              >
+                {savingStaffTempPass ? 'Setting...' : 'Set Temp Password'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MODAL: CREATE / EDIT PLAN */}
       {showPlanModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-[100] overflow-y-auto">
@@ -1998,6 +2208,12 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={showAdminChangePassword}
+        onClose={() => setShowAdminChangePassword(false)}
+      />
     </div>
   );
 }

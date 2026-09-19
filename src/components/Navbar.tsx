@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import ChangePasswordModal from './ChangePasswordModal';
 import {
   Truck,
   ShieldCheck,
@@ -18,17 +19,38 @@ import {
   ChefHat,
   Sparkles,
   ChevronRight,
+  KeyRound,
+  ChevronDown,
 } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
 
-  // Close mobile drawer on route change
+  // Close menus on route change
   useEffect(() => {
     setMobileMenuOpen(false);
+    setAccountMenuOpen(false);
   }, [pathname]);
+
+  // Close account menu on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) {
+        setAccountMenuOpen(false);
+      }
+    };
+    if (accountMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [accountMenuOpen]);
 
   // Dynamic navigation links based on user role
   const getNavLinks = () => {
@@ -159,43 +181,112 @@ export default function Navbar() {
             })}
           </nav>
 
-          {/* Right Actions / User Profile Ring */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* Right Actions / User Profile Ring & Account Menu */}
+          <div className="hidden md:flex items-center gap-2">
             {user ? (
-              <div className="flex items-center gap-3 pl-2 border-l border-[#B0BE8C]/40">
-                <div className="text-right">
-                  <div className="text-xs font-bold text-[#22222B] leading-tight flex items-center justify-end gap-1.5">
-                    <span>{user.name}</span>
-                  </div>
-                  <div className="flex items-center justify-end gap-1 mt-0.5">
-                    <span
-                      className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wide ${roleTheme.badge}`}
-                    >
-                      {user.role}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Avatar with Status Ring Indicator */}
-                <div className="relative">
-                  <div
-                    className={`w-9 h-9 rounded-full bg-white flex items-center justify-center text-[#22222B] font-black text-xs ring-2 ${roleTheme.ring} ring-offset-2 ring-offset-[#F3F5F4] shadow-xs border border-[#B0BE8C]/30`}
-                  >
-                    {user.name ? user.name.slice(0, 2).toUpperCase() : 'NS'}
-                  </div>
-                  <span
-                    className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ${roleTheme.dot} ring-2 ring-white`}
-                    title="Online & Active"
-                  />
-                </div>
-
+              <div className="relative flex items-center gap-1 pl-2 border-l border-[#B0BE8C]/40" ref={accountMenuRef}>
+                {/* Account Trigger Button */}
                 <button
+                  type="button"
+                  onClick={() => setAccountMenuOpen(!accountMenuOpen)}
+                  aria-expanded={accountMenuOpen}
+                  aria-haspopup="true"
+                  className="flex items-center gap-2 p-1.5 rounded-2xl hover:bg-[#B0BE8C]/20 transition-all text-left focus:outline-none focus:ring-2 focus:ring-[#741B22]/30 group"
+                  title="Account Options"
+                >
+                  <div className="text-right hidden lg:block">
+                    <div className="text-xs font-bold text-[#22222B] leading-tight flex items-center justify-end gap-1">
+                      <span>{user.name}</span>
+                    </div>
+                    <div className="flex items-center justify-end gap-1 mt-0.5">
+                      <span
+                        className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border tracking-wide ${roleTheme.badge}`}
+                      >
+                        {user.role}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Avatar with Status Ring Indicator */}
+                  <div className="relative">
+                    <div
+                      className={`w-9 h-9 rounded-full bg-white flex items-center justify-center text-[#22222B] font-black text-xs ring-2 ${roleTheme.ring} ring-offset-2 ring-offset-[#F3F5F4] shadow-xs border border-[#B0BE8C]/30`}
+                    >
+                      {user.name ? user.name.slice(0, 2).toUpperCase() : 'NS'}
+                    </div>
+                    <span
+                      className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ${roleTheme.dot} ring-2 ring-white`}
+                      title="Online & Active"
+                    />
+                  </div>
+
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${
+                      accountMenuOpen ? 'rotate-180 text-[#741B22]' : 'group-hover:text-[#22222B]'
+                    }`}
+                  />
+                </button>
+
+                {/* Direct Quick Change Password Button near Logout */}
+                <button
+                  type="button"
+                  onClick={() => setShowChangePasswordModal(true)}
+                  title="Change Password"
+                  aria-label="Change Password"
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:text-[#741B22] hover:bg-[#741B22]/10 transition-colors touch-target"
+                >
+                  <KeyRound className="w-4 h-4" />
+                </button>
+
+                {/* Direct Logout Button */}
+                <button
+                  type="button"
                   onClick={logout}
                   title="Sign Out"
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:text-[#B92F25] hover:bg-[#B92F25]/10 transition-colors ml-1 touch-target"
+                  aria-label="Sign Out"
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-[#B92F25] hover:bg-[#B92F25]/10 transition-colors touch-target"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
+
+                {/* Compact Dropdown Menu */}
+                {accountMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-[#B0BE8C]/40 p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="px-3 py-2 border-b border-slate-100 mb-1">
+                      <div className="text-xs font-black text-[#22222B] truncate">{user.name}</div>
+                      <div className="text-[11px] text-slate-500 truncate">{user.phone}</div>
+                      <span
+                        className={`inline-block mt-1 text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${roleTheme.badge}`}
+                      >
+                        {user.role}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAccountMenuOpen(false);
+                        setShowChangePasswordModal(true);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-[#22222B] hover:bg-[#B0BE8C]/20 rounded-xl transition-colors min-h-[38px] text-left"
+                    >
+                      <KeyRound className="w-4 h-4 text-[#741B22] shrink-0" />
+                      <span>Change Password</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAccountMenuOpen(false);
+                        logout();
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-[#B92F25] hover:bg-[#B92F25]/10 rounded-xl transition-colors min-h-[38px] text-left"
+                    >
+                      <LogOut className="w-4 h-4 shrink-0" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-2">
@@ -274,16 +365,30 @@ export default function Navbar() {
                       </span>
                     </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      logout();
-                    }}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 text-xs font-bold text-[#B92F25] bg-[#B92F25]/10 hover:bg-[#B92F25]/20 rounded-xl transition-colors min-h-[44px]"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Sign Out
-                  </button>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        setShowChangePasswordModal(true);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-[#22222B] bg-white hover:bg-slate-50 border border-[#B0BE8C]/40 rounded-xl transition-colors min-h-[44px]"
+                    >
+                      <KeyRound className="w-4 h-4 text-[#741B22]" />
+                      <span>Change Password</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        logout();
+                      }}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-[#B92F25] bg-[#B92F25]/10 hover:bg-[#B92F25]/20 rounded-xl transition-colors min-h-[44px]"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
@@ -318,6 +423,11 @@ export default function Navbar() {
           aria-hidden="true"
         />
       )}
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={showChangePasswordModal}
+        onClose={() => setShowChangePasswordModal(false)}
+      />
     </>
   );
 }

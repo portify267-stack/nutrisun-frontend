@@ -10,7 +10,7 @@ interface AuthContextType {
   loading: boolean;
   login: (phone: string, password: string) => Promise<User>;
   register: (name: string, phone: string, delivery_address: string, password: string, email?: string) => Promise<User>;
-  changePassword: (newPassword: string) => Promise<void>;
+  changePassword: (newPassword: string, currentPassword?: string, confirmPassword?: string) => Promise<void>;
   logout: () => void;
   redirectToDashboard: (role?: Role) => void;
   refreshUser: () => Promise<User | null>;
@@ -107,8 +107,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const changePassword = async (newPassword: string): Promise<void> => {
-    await authApi.changePassword({ new_password: newPassword });
+  const changePassword = async (newPassword: string, currentPassword?: string, confirmPassword?: string): Promise<void> => {
+    await authApi.changePassword({
+      new_password: newPassword,
+      current_password: currentPassword,
+      confirm_password: confirmPassword,
+    });
     if (user) {
       const updatedUser = { ...user, must_change_password: false };
       setUser(updatedUser);

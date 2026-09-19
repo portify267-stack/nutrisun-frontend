@@ -103,6 +103,7 @@ export interface User {
   email?: string;
   role: Role;
   must_change_password?: boolean;
+  credential_locked?: boolean;
   instructions_accepted?: boolean;
   instructions_accepted_at?: string;
   instructions_version?: string;
@@ -480,7 +481,7 @@ export const authApi = {
     api.post<{ message: string; token: string; user: User }>('/auth/register', data),
   login: (data: { phone: string; password: string }) =>
     api.post<{ message: string; token: string; user: User }>('/auth/login', data),
-  changePassword: (data: { new_password: string }) =>
+  changePassword: (data: { current_password?: string; new_password: string; confirm_password?: string }) =>
     api.post<{ message: string }>('/auth/change-password', data),
   getMe: () =>
     api.get<{ user: User }>('/auth/me'),
@@ -600,6 +601,10 @@ export const adminApi = {
     api.get<{ staff: User[] }>('/admin/staff'),
   createStaff: (data: { name: string; phone: string; password: string; role: Role }) =>
     api.post<{ message: string; staff: User }>('/admin/staff', data),
+  toggleStaffStatus: (id: number, data: { is_active: boolean }) =>
+    api.put<{ message: string; id: number; is_active: boolean }>(`/admin/staff/${id}/status`, data),
+  resetStaffPassword: (id: number, data: { temporary_password: string }) =>
+    api.post<{ message: string; expires_at: string }>(`/admin/staff/${id}/reset-password`, data),
   getPlans: () =>
     api.get<{ plans: SubscriptionPlan[] }>('/admin/plans'),
   createPlan: (data: { name: string; days_count: number; price: number; shifts: string; meal_credits: number }) =>
