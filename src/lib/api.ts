@@ -13,9 +13,15 @@ const getApiBaseUrl = () => {
     }
     return envUrl || '/api';
   }
-  return process.env.INTERNAL_BACKEND_URL
-    ? `${process.env.INTERNAL_BACKEND_URL}/api`
-    : 'http://127.0.0.1:8080/api';
+  const internal = process.env.INTERNAL_BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+  if (internal) {
+    const cleanInternal = internal.replace(/\/api\/?$/, '').replace(/\/+$/, '');
+    return `${cleanInternal}/api`;
+  }
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://nutrisun-backend.onrender.com/api';
+  }
+  return 'http://127.0.0.1:8080/api';
 };
 
 export const API_BASE_URL = getApiBaseUrl();
@@ -73,7 +79,24 @@ export async function fetchReceiptBlobUrl(receiptPath: string): Promise<string |
   if (!token) return null;
 
   try {
-    const response = await fetch(receiptPath, {
+    let targetUrl = receiptPath.trim();
+    if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+      if (!targetUrl.startsWith('/')) {
+        targetUrl = '/' + targetUrl;
+      }
+      // If API_BASE_URL is pointing directly to an external backend origin (not same-origin /api),
+      // resolve the upload path against that backend origin so it reaches the Render server directly
+      if (API_BASE_URL && API_BASE_URL.startsWith('http')) {
+        const backendOrigin = API_BASE_URL.replace(/\/api\/?$/, '');
+        const isTargetingLoopback = backendOrigin.includes('localhost') || backendOrigin.includes('127.0.0.1');
+        const isHostRemote = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        if (!isTargetingLoopback || !isHostRemote) {
+          targetUrl = `${backendOrigin}${targetUrl}`;
+        }
+      }
+    }
+
+    const response = await fetch(targetUrl, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!response.ok) return null;
