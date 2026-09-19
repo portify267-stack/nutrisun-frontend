@@ -110,7 +110,11 @@ export default function EntryPage() {
       setShowChangePasswordModal(false);
       redirectToDashboard(user?.role);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to update password.');
+      const msg =
+        typeof err.response?.data?.error === 'string'
+          ? err.response.data.error
+          : err.response?.data?.message || 'Failed to update password.';
+      setError(msg);
     } finally {
       setChangingPass(false);
     }

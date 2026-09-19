@@ -89,7 +89,8 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
       if (!err.response || err.code === 'ERR_NETWORK' || err.code === 'ECONNABORTED') {
         setError('Network error: Unable to reach the NutriSun API server. Please try again.');
       } else if (err.response.data?.error) {
-        setError(err.response.data.error);
+        const errVal = err.response.data.error;
+        setError(typeof errVal === 'string' ? errVal : errVal?.message || 'Failed to update password.');
       } else {
         setError('Failed to update password. Please check your credentials and try again.');
       }
