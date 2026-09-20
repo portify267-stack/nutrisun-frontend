@@ -1,0 +1,180 @@
+{
+  "test_type": "10-minute sustained load test",
+  "concurrent_users": 25,
+  "duration_seconds": 603.149,
+  "total_requests": 32660,
+  "overall_throughput_rps": 54.15,
+  "overall_p50_ms": 286,
+  "overall_p95_ms": 939,
+  "min_latency_ms": 249,
+  "max_latency_ms": 5232,
+  "total_errors": 0,
+  "per_minute_results": [
+    {
+      "Minute": "Min 1",
+      "Requests": 3064,
+      "Throughput": "51.1 req/s",
+      "p50": "288 ms",
+      "p95": "1463 ms",
+      "Errors": 0,
+      "PeakActiveInUse": 25,
+      "DeltaWaitCount": 841,
+      "DeltaWaitDuration": "83223 ms",
+      "AvgAllocMB": "6.1 MB",
+      "MaxGoroutines": 72
+    },
+    {
+      "Minute": "Min 2",
+      "Requests": 3161,
+      "Throughput": "52.7 req/s",
+      "p50": "294 ms",
+      "p95": "1003 ms",
+      "Errors": 0,
+      "PeakActiveInUse": 25,
+      "DeltaWaitCount": 811,
+      "DeltaWaitDuration": "63724 ms",
+      "AvgAllocMB": "6.1 MB",
+      "MaxGoroutines": 80
+    },
+    {
+      "Minute": "Min 3",
+      "Requests": 3196,
+      "Throughput": "53.3 req/s",
+      "p50": "288 ms",
+      "p95": "1112 ms",
+      "Errors": 0,
+      "PeakActiveInUse": 25,
+      "DeltaWaitCount": 779,
+      "DeltaWaitDuration": "55901 ms",
+      "AvgAllocMB": "6.1 MB",
+      "MaxGoroutines": 77
+    },
+    {
+      "Minute": "Min 4",
+      "Requests": 3307,
+      "Throughput": "55.1 req/s",
+      "p50": "288 ms",
+      "p95": "930 ms",
+      "Errors": 0,
+      "PeakActiveInUse": 25,
+      "DeltaWaitCount": 688,
+      "DeltaWaitDuration": "39960 ms",
+      "AvgAllocMB": "6.5 MB",
+      "MaxGoroutines": 74
+    },
+    {
+      "Minute": "Min 5",
+      "Requests": 3304,
+      "Throughput": "55.1 req/s",
+      "p50": "291 ms",
+      "p95": "849 ms",
+      "Errors": 0,
+      "PeakActiveInUse": 25,
+      "DeltaWaitCount": 628,
+      "DeltaWaitDuration": "27008 ms",
+      "AvgAllocMB": "6.6 MB",
+      "MaxGoroutines": 68
+    },
+    {
+      "Minute": "Min 6",
+      "Requests": 3380,
+      "Throughput": "56.3 req/s",
+      "p50": "286 ms",
+      "p95": "821 ms",
+      "Errors": 0,
+      "PeakActiveInUse": 24,
+      "DeltaWaitCount": 673,
+      "DeltaWaitDuration": "34455 ms",
+      "AvgAllocMB": "6.2 MB",
+      "MaxGoroutines": 63
+    },
+    {
+      "Minute": "Min 7",
+      "Requests": 3431,
+      "Throughput": "57.2 req/s",
+      "p50": "282 ms",
+      "p95": "836 ms",
+      "Errors": 0,
+      "PeakActiveInUse": 25,
+      "DeltaWaitCount": 618,
+      "DeltaWaitDuration": "25878 ms",
+      "AvgAllocMB": "6.1 MB",
+      "MaxGoroutines": 74
+    },
+    {
+      "Minute": "Min 8",
+      "Requests": 3227,
+      "Throughput": "53.8 req/s",
+      "p50": "286 ms",
+      "p95": "944 ms",
+      "Errors": 0,
+      "PeakActiveInUse": 25,
+      "DeltaWaitCount": 810,
+      "DeltaWaitDuration": "51499 ms",
+      "AvgAllocMB": "6.2 MB",
+      "MaxGoroutines": 87
+    },
+    {
+      "Minute": "Min 9",
+      "Requests": 3357,
+      "Throughput": "56.0 req/s",
+      "p50": "284 ms",
+      "p95": "857 ms",
+      "Errors": 0,
+      "PeakActiveInUse": 25,
+      "DeltaWaitCount": 605,
+      "DeltaWaitDuration": "28021 ms",
+      "AvgAllocMB": "6.9 MB",
+      "MaxGoroutines": 79
+    },
+    {
+      "Minute": "Min 10",
+      "Requests": 3233,
+      "Throughput": "53.9 req/s",
+      "p50": "285 ms",
+      "p95": "1053 ms",
+      "Errors": 0,
+      "PeakActiveInUse": 25,
+      "DeltaWaitCount": 675,
+      "DeltaWaitDuration": "49721 ms",
+      "AvgAllocMB": "5.9 MB",
+      "MaxGoroutines": 91
+    }
+  ],
+  "initial_telemetry": {
+    "db": {
+      "max_open_connections": 25,
+      "open_connections": 1,
+      "in_use": 0,
+      "idle": 1,
+      "wait_count": 0,
+      "wait_duration_ms": 0
+    },
+    "memory": {
+      "alloc_mb": 3.78,
+      "total_alloc_mb": 9.45,
+      "sys_mb": 17.43,
+      "num_gc": 4
+    },
+    "goroutines": 6,
+    "num_cpu": 8
+  },
+  "final_telemetry": {
+    "db": {
+      "max_open_connections": 25,
+      "open_connections": 10,
+      "in_use": 0,
+      "idle": 10,
+      "wait_count": 7128,
+      "wait_duration_ms": 459390
+    },
+    "memory": {
+      "alloc_mb": 7.89,
+      "total_alloc_mb": 1797.09,
+      "sys_mb": 29.46,
+      "num_gc": 615
+    },
+    "goroutines": 40,
+    "num_cpu": 8
+  }
+}
