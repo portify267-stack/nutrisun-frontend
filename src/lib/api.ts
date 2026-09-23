@@ -2,6 +2,10 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 const getApiBaseUrl = () => {
   if (typeof window !== 'undefined') {
+    const directUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (directUrl && directUrl.startsWith('http')) {
+      return directUrl.endsWith('/api') ? directUrl : `${directUrl.replace(/\/+$/, '')}/api`;
+    }
     const envUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
     if (envUrl && envUrl.startsWith('http')) {
       const isTargetingLoopback = envUrl.includes('localhost') || envUrl.includes('127.0.0.1');
@@ -13,13 +17,16 @@ const getApiBaseUrl = () => {
     }
     return envUrl || '/api';
   }
-  const internal = process.env.INTERNAL_BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+  const internal =
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.INTERNAL_BACKEND_URL ||
+    process.env.NEXT_PUBLIC_BACKEND_URL;
   if (internal) {
     const cleanInternal = internal.replace(/\/api\/?$/, '').replace(/\/+$/, '');
     return `${cleanInternal}/api`;
   }
   if (process.env.NODE_ENV === 'production') {
-    return 'https://nutrisun-backend.onrender.com/api';
+    return 'https://nutrisun-backend-hirj.onrender.com/api';
   }
   return 'http://127.0.0.1:8080/api';
 };

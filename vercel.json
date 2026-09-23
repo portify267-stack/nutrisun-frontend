@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://nutrisun-backend.onrender.com/api/:path*"
+      "destination": "https://nutrisun-backend-hirj.onrender.com/api/:path*"
     },
     {
       "source": "/uploads/:path*",
-      "destination": "https://nutrisun-backend.onrender.com/uploads/:path*"
+      "destination": "https://nutrisun-backend-hirj.onrender.com/uploads/:path*"
     }
   ]
 }
