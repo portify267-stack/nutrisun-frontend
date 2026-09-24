@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import Image from 'next/image';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
+import { ToastProvider } from '@/context/ToastContext';
 import Navbar from '@/components/Navbar';
 import { Leaf, HeartPulse } from 'lucide-react';
 
@@ -38,9 +39,10 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
       </head>
       <body className="min-h-full flex flex-col bg-[#F3F5F4] text-[#22222B] selection:bg-[#B92F25] selection:text-white bg-mesh-glow">
-        <AuthProvider>
-          <Navbar />
-          <main className="flex-1 w-full">{children}</main>
+        <ToastProvider>
+          <AuthProvider>
+            <Navbar />
+            <main className="flex-1 w-full">{children}</main>
           <footer className="relative z-10 bg-white/80 backdrop-blur-md border-t border-[#B0BE8C]/30 py-6 sm:py-8 text-xs text-[#22222B]/70 w-full overflow-hidden">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
@@ -81,6 +83,7 @@ export default function RootLayout({
             </div>
           </footer>
         </AuthProvider>
+        </ToastProvider>
       </body>
     </html>
   );

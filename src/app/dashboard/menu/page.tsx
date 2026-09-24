@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { menuApi, MenuItem, Role, ExtractedPreviewItem } from '@/lib/api';
+import { menuApi, MenuItem, ExtractedPreviewItem } from '@/lib/api';
 import {
   Calendar,
   Upload,
@@ -16,18 +16,10 @@ import {
   Coffee,
   Utensils,
   Moon,
-  Clock,
-  ShieldCheck,
-  ChefHat,
-  User as UserIcon,
-  ChevronRight,
   AlertTriangle,
-  FileCheck,
   X,
   Sparkles,
-  Layers,
   Eye,
-  Info,
   Loader2,
 } from 'lucide-react';
 
@@ -117,7 +109,7 @@ export default function MonthlyMenuPage() {
     if (user) {
       fetchMenu();
     }
-  }, [user, selectedMonth, selectedYear]);
+  }, [user?.id, selectedMonth, selectedYear]);
 
   // Group menu items by date
   const groupedMenu = useMemo(() => {
@@ -769,7 +761,7 @@ export default function MonthlyMenuPage() {
                       {isToday && (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#B92F25] text-white text-[10px] font-black uppercase tracking-wider shadow-xs shrink-0 animate-pulse">
                           <Sparkles className="w-3 h-3 text-[#F7DE9D]" />
-                          Today's Menu
+                          Today&apos;s Menu
                         </span>
                       )}
                     </div>

@@ -26,8 +26,6 @@ import {
   Clock,
   RefreshCw,
   FileSpreadsheet,
-  PauseCircle,
-  PlayCircle,
   SkipForward,
   ArrowLeftRight,
   Upload,
@@ -83,7 +81,7 @@ export default function AdminDashboard() {
   const [staff, setStaff] = useState<User[]>([]);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null);
+  const [_analytics, setAnalytics] = useState<AnalyticsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState<string | null>(null);
   const [exportingFullExcel, setExportingFullExcel] = useState(false);
@@ -280,10 +278,16 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
+    if (!authLoading && (!user || user.role !== 'admin')) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
     if (user && user.role === 'admin') {
       loadAll();
     }
-  }, [user]);
+  }, [user?.id, user?.role]);
 
   // Handlers
   const handleConfirmPayment = async () => {
@@ -515,7 +519,7 @@ export default function AdminDashboard() {
     }
   };
 
-  if (authLoading || loading) {
+  if (authLoading || (loading && user?.role === 'admin')) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
         <RefreshCw className="w-8 h-8 text-[#B92F25] animate-spin" />
@@ -523,8 +527,19 @@ export default function AdminDashboard() {
     );
   }
 
+  if (!user || user.role !== 'admin') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[65vh] gap-3 text-center px-4">
+        <AlertTriangle className="w-10 h-10 text-amber-500" />
+        <h2 className="text-xl font-black text-[#22222B]">Access Restricted</h2>
+        <p className="text-xs text-slate-500 max-w-sm">
+          Administrator privileges required. Redirecting to sign in...
+        </p>
+      </div>
+    );
+  }
+
   const pendingPayments = subscriptions.filter((s) => s.payment_status === 'PENDING');
-  const pendingRequestsList = requests.filter((r) => r.status === 'PENDING');
 
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
@@ -1342,7 +1357,7 @@ export default function AdminDashboard() {
           {staff.length === 0 ? (
             <div className="text-center py-12 px-4 rounded-3xl bg-white border border-[#B0BE8C]/30 shadow-xs">
               <p className="text-sm font-bold text-[#22222B]">No staff members found</p>
-              <p className="text-xs text-slate-500 mt-1">Use "Add Staff Member" above to create Chef or Delivery Rider accounts.</p>
+              <p className="text-xs text-slate-500 mt-1">Use &quot;Add Staff Member&quot; above to create Chef or Delivery Rider accounts.</p>
             </div>
           ) : (
             <>

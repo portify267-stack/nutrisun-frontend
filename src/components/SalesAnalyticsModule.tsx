@@ -5,15 +5,12 @@ import {
   adminApi,
   AnalyticsResponse,
   CustomerReportItem,
-  DailySalesDetail,
-  PaymentRecordDetail,
 } from '@/lib/api';
 import {
   FileSpreadsheet,
   Download,
   Calendar,
   Search,
-  CheckCircle2,
   AlertCircle,
   Clock,
   Loader2,
@@ -25,15 +22,11 @@ import {
   ChevronUp,
   RefreshCw,
   Coins,
-  ShieldCheck,
   History,
   Phone,
   MapPin,
   Mail,
-  User,
-  ExternalLink,
   ArrowRight,
-  Info,
 } from 'lucide-react';
 
 interface SalesAnalyticsModuleProps {
@@ -111,9 +104,10 @@ export default function SalesAnalyticsModule({ onNotification }: SalesAnalyticsM
           setSelectedCustomerId(custList[0].id);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching analytics:', err);
-      setError(err.message || 'Error loading sales and analytics reports');
+      const msg = err instanceof Error ? err.message : 'Error loading sales and analytics reports';
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -144,8 +138,9 @@ export default function SalesAnalyticsModule({ onNotification }: SalesAnalyticsM
       } else {
         setError(res.error || 'Failed to download monthly Excel report');
       }
-    } catch (err: any) {
-      setError(err.message || 'Error during monthly export');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error during monthly export';
+      setError(msg);
     } finally {
       setExportingMonthly(false);
     }
@@ -162,8 +157,9 @@ export default function SalesAnalyticsModule({ onNotification }: SalesAnalyticsM
       } else {
         setError(res.error || 'Failed to download comprehensive Excel export');
       }
-    } catch (err: any) {
-      setError(err.message || 'Error during full export');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error during full export';
+      setError(msg);
     } finally {
       setExportingFull(false);
     }

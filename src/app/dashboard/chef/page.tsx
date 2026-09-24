@@ -41,9 +41,10 @@ export default function ChefDashboard() {
       setData(res.data);
       setFetchError(null);
       setLastUpdated(new Date().toLocaleTimeString());
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to fetch kitchen preparation count:', err);
-      setFetchError(err.response?.data?.error || 'Unable to connect to kitchen prep service. Please retry.');
+      const apiErr = err as { response?: { data?: { error?: string } } };
+      setFetchError(apiErr.response?.data?.error || 'Unable to connect to kitchen prep service. Please retry.');
     } finally {
       setLoading(false);
     }
@@ -53,7 +54,7 @@ export default function ChefDashboard() {
     if (user && (user.role === 'chef' || user.role === 'admin')) {
       fetchCookingCount();
     }
-  }, [user, date, shift]);
+  }, [user?.id, user?.role, date, shift]);
 
   const getShiftIcon = (s: MealSlot) => {
     switch (s) {
@@ -70,6 +71,18 @@ export default function ChefDashboard() {
     return (
       <div className="flex items-center justify-center min-h-[65vh]">
         <RefreshCw className="w-8 h-8 animate-spin text-[#B92F25]" />
+      </div>
+    );
+  }
+
+  if (!user || (user.role !== 'chef' && user.role !== 'admin')) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[65vh] gap-3 text-center px-4">
+        <AlertTriangle className="w-10 h-10 text-amber-500" />
+        <h2 className="text-xl font-black text-[#22222B]">Access Restricted</h2>
+        <p className="text-xs text-slate-500 max-w-sm">
+          Head Chef credentials required. Redirecting to sign in...
+        </p>
       </div>
     );
   }
@@ -181,7 +194,7 @@ export default function ChefDashboard() {
               <Clock className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
               <div>
                 <h3 className="text-sm font-black text-rose-900">
-                  Late Cancellations Alert ({data?.late_cancellations} meal{data?.late_cancellations! > 1 ? 's' : ''})
+                  Late Cancellations Alert ({data?.late_cancellations} meal{(data?.late_cancellations ?? 0) > 1 ? 's' : ''})
                 </h3>
                 <p className="text-xs text-rose-800 mt-0.5">
                   Customer cancelled {data?.late_cancellations} meal(s) for this shift after the cutoff time. Preparation may already have started in the kitchen. These meals are already stopped and excluded from the delivery list.

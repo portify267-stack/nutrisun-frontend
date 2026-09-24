@@ -44,9 +44,10 @@ export default function DeliveryDashboard() {
       const res = await deliveryApi.getSheet({ date, shift });
       setSheet(res.data);
       setFetchError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to fetch delivery run-sheet:', err);
-      setFetchError(err.response?.data?.error || 'Unable to connect to delivery run-sheet service. Please retry.');
+      const apiErr = err as { response?: { data?: { error?: string } } };
+      setFetchError(apiErr.response?.data?.error || 'Unable to connect to delivery run-sheet service. Please retry.');
     } finally {
       setLoading(false);
     }
@@ -56,7 +57,7 @@ export default function DeliveryDashboard() {
     if (user && (user.role === 'delivery' || user.role === 'admin')) {
       fetchSheet();
     }
-  }, [user, date, shift]);
+  }, [user?.id, user?.role, date, shift]);
 
   const handleMarkDelivered = async (mealLogId: number) => {
     setUpdatingId(mealLogId);
@@ -74,8 +75,9 @@ export default function DeliveryDashboard() {
           deliveries: updated,
         });
       }
-    } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to mark as delivered.');
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { data?: { error?: string } } };
+      alert(apiErr.response?.data?.error || 'Failed to mark as delivered.');
     } finally {
       setUpdatingId(null);
     }
@@ -96,6 +98,18 @@ export default function DeliveryDashboard() {
     return (
       <div className="flex items-center justify-center min-h-[65vh]">
         <RefreshCw className="w-8 h-8 animate-spin text-[#B92F25]" />
+      </div>
+    );
+  }
+
+  if (!user || (user.role !== 'delivery' && user.role !== 'admin')) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[65vh] gap-3 text-center px-4">
+        <AlertTriangle className="w-10 h-10 text-amber-500" />
+        <h2 className="text-xl font-black text-[#22222B]">Access Restricted</h2>
+        <p className="text-xs text-slate-500 max-w-sm">
+          Delivery Fleet credentials required. Redirecting to sign in...
+        </p>
       </div>
     );
   }

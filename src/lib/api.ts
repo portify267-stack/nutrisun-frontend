@@ -55,15 +55,56 @@ api.interceptors.request.use(
   (error: AxiosError) => Promise.reject(error)
 );
 
-// Response interceptor: Handle 401 Unauthorized
+import { triggerGlobalToast } from '@/context/ToastContext';
+
+// Response interceptor: Handle 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server, and Network errors
 api.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => {
-    if (error.response?.status === 401 && typeof window !== 'undefined') {
-      const currentPath = window.location.pathname;
-      if (currentPath !== '/login' && currentPath !== '/register' && currentPath !== '/') {
-        localStorage.removeItem('nutrisun_token');
-        localStorage.removeItem('nutrisun_user');
+  (error: AxiosError<{ error?: string; message?: string }>) => {
+    if (typeof window !== 'undefined') {
+      const status = error.response?.status;
+      const data = error.response?.data;
+      const serverMessage = data?.error || data?.message;
+
+      if (!status) {
+        // Network offline or server unreachable
+        triggerGlobalToast(
+          'error',
+          'Unable to connect to NutriSun API. Please verify your internet connection.',
+          'Connection Issue'
+        );
+      } else if (status === 401) {
+        const currentPath = window.location.pathname;
+        if (currentPath !== '/login' && currentPath !== '/register' && currentPath !== '/') {
+          localStorage.removeItem('nutrisun_token');
+          localStorage.removeItem('nutrisun_user');
+          triggerGlobalToast(
+            'warning',
+            serverMessage || 'Your session has expired. Please sign in again.',
+            'Session Expired'
+          );
+        }
+      } else if (status === 403) {
+        triggerGlobalToast(
+          'error',
+          serverMessage || 'Access restricted. You do not have permission to perform this action.',
+          'Access Denied'
+        );
+      } else if (status === 404) {
+        const url = error.config?.url || '';
+        if (!url.includes('/health')) {
+          triggerGlobalToast(
+            'warning',
+            serverMessage || 'Requested service or resource not found.',
+            'Not Found'
+          );
+        }
+      } else if (status >= 500) {
+        triggerGlobalToast(
+          'error',
+          serverMessage || 'A server error occurred. Please retry shortly.',
+          'Server Error'
+        );
       }
     }
     return Promise.reject(error);
@@ -300,7 +341,7 @@ export interface DeliverySheetResponse {
  */
 export async function downloadAuthenticatedFile(
   endpointUrl: string,
-  params?: Record<string, any>,
+  params?: Record<string, string | number | boolean | undefined>,
   fallbackFilename: string = 'NutriSun_Export.xlsx'
 ): Promise<{ success: boolean; filename: string; error?: string }> {
   try {
@@ -352,16 +393,20 @@ export async function downloadAuthenticatedFile(
     window.URL.revokeObjectURL(url);
 
     return { success: true, filename };
-  } catch (err: any) {
-    let message = err.message || 'Download failed';
-    if (err.response) {
-      if (err.response.status === 401) {
+  } catch (err: unknown) {
+    let message = 'Download failed';
+    const axiosErr = err as AxiosError;
+    if (axiosErr.message) {
+      message = axiosErr.message;
+    }
+    if (axiosErr.response) {
+      if (axiosErr.response.status === 401) {
         message = 'Session expired or authorization required. Please log in again.';
-      } else if (err.response.status === 403) {
+      } else if (axiosErr.response.status === 403) {
         message = 'Admin access required to download this report.';
-      } else if (err.response.data instanceof Blob) {
+      } else if (axiosErr.response.data instanceof Blob) {
         try {
-          const text = await (err.response.data as Blob).text();
+          const text = await axiosErr.response.data.text();
           const json = JSON.parse(text);
           message = json.error || json.message || message;
         } catch {}

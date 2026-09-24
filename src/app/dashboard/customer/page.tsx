@@ -32,13 +32,11 @@ import {
   Info,
   Check,
   CheckCircle2,
-  Send,
   ChevronRight,
   Copy,
   Download,
   Upload,
   Image as ImageIcon,
-  FileText,
   X,
   ExternalLink,
   AlertCircle,
@@ -175,7 +173,7 @@ export default function CustomerDashboard() {
     if (user && user.role === 'customer' && user.instructions_accepted) {
       loadData();
     }
-  }, [user]);
+  }, [user?.id, user?.role, user?.instructions_accepted]);
 
   const formatShiftName = (shifts?: string) => {
     if (!shifts) return 'Standard Meals';
