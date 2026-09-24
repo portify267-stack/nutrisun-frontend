@@ -1,33 +1,30 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 const getApiBaseUrl = () => {
-  if (typeof window !== 'undefined') {
-    const directUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (directUrl && directUrl.startsWith('http')) {
-      return directUrl.endsWith('/api') ? directUrl : `${directUrl.replace(/\/+$/, '')}/api`;
-    }
-    const envUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-    if (envUrl && envUrl.startsWith('http')) {
+  const directUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (directUrl && directUrl.startsWith('http')) {
+    return directUrl.endsWith('/api') ? directUrl : `${directUrl.replace(/\/+$/, '')}/api`;
+  }
+  const envUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (envUrl && envUrl.startsWith('http')) {
+    if (typeof window !== 'undefined') {
       const isTargetingLoopback = envUrl.includes('localhost') || envUrl.includes('127.0.0.1');
       const isHostRemoteOrLAN = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
       if (isTargetingLoopback && isHostRemoteOrLAN) {
-        return '/api';
+        return 'https://nutrisun-backend-hirj.onrender.com/api';
       }
-      return envUrl;
     }
-    return envUrl || '/api';
+    return envUrl.endsWith('/api') ? envUrl : `${envUrl.replace(/\/+$/, '')}/api`;
   }
-  const internal =
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.INTERNAL_BACKEND_URL ||
-    process.env.NEXT_PUBLIC_BACKEND_URL;
-  if (internal) {
-    const cleanInternal = internal.replace(/\/api\/?$/, '').replace(/\/+$/, '');
-    return `${cleanInternal}/api`;
-  }
-  if (process.env.NODE_ENV === 'production') {
+
+  // When deployed to production or loaded on Vercel preview/production domains
+  if (
+    process.env.NODE_ENV === 'production' ||
+    (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app'))
+  ) {
     return 'https://nutrisun-backend-hirj.onrender.com/api';
   }
+
   return 'http://127.0.0.1:8080/api';
 };
 
